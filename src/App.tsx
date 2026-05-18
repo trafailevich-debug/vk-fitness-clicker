@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import bridge from '@vkontakte/vk-bridge'
+import { APP_ID } from './config'
 import { StatsBar } from './components/StatsBar'
 import { ClickButton } from './components/ClickButton'
 import { TrainersList } from './components/TrainersList'
@@ -44,6 +45,7 @@ export default function App() {
 
   // VK Bridge: init + get user name
   useEffect(() => {
+    void APP_ID // используется для VK Storage и лидерборда
     bridge.send('VKWebAppInit').catch(() => {})
     bridge.send('VKWebAppGetUserInfo')
       .then(u => setState(s => ({ ...s, userName: u.first_name })))
