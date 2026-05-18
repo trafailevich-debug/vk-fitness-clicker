@@ -5,14 +5,18 @@ import { ClickButton } from './components/ClickButton'
 import { TrainersList } from './components/TrainersList'
 import { DailyChallenges } from './components/DailyChallenges'
 import { TabBar } from './components/TabBar'
+import { OfflineEarnings } from './components/OfflineEarnings'
+import { AchievementToast } from './components/AchievementToast'
 import {
-  GameState, Trainer, TRAINERS, LEVELS, DAILY_CHALLENGES, MAX_DAILY_CLICKS,
+  GameState, Trainer, TRAINERS, LEVELS, DAILY_CHALLENGES,
+  MAX_DAILY_CLICKS, MAX_OFFLINE_SECONDS,
   getLevel, getTrainerCost, saveGame, loadGame, todayStr,
 } from './store/gameStore'
 import './App.css'
 
 const TICK_MS = 200
 const COMBO_RESET_MS = 1500
+const FREEZE_COST = 200
 
 export type Tab = 'train' | 'challenges' | 'upgrades'
 
@@ -31,7 +35,6 @@ function buildInitialState(): GameState {
     ...t,
     count: trainerCounts[t.id] ?? 0,
   }))
-
   const pps = trainers.reduce((sum, t) => sum + t.baseIncome * t.count, 0)
 
   const isNewDay = (saved?.lastDailyReset ?? '') !== today
@@ -44,17 +47,27 @@ function buildInitialState(): GameState {
   const yesterdayStr = yesterday.toISOString().slice(0, 10)
 
   let streak = saved?.streak ?? 0
+  const streakFreezes = saved?.streakFreezes ?? 0
+
   if (lastLogin === today) {
-    // already counted today
+    // already counted
   } else if (lastLogin === yesterdayStr) {
     streak = streak + 1
-  } else {
+  } else if (lastLogin === '') {
     streak = 1
+  } else {
+    // missed a day — use freeze if available
+    if (streakFreezes > 0) {
+      // streak preserved by freeze, freeze consumed
+    } else {
+      streak = 1
+    }
   }
 
   return {
     power: saved?.power ?? 0,
     totalPower: saved?.totalPower ?? 0,
+    totalClicks: saved?.totalClicks ?? 0,
     powerPerSecond: pps,
     userName: '',
     trainers,
@@ -63,6 +76,11 @@ function buildInitialState(): GameState {
     completedChallenges,
     streak,
     lastLoginDate: today,
+    streakFreezes: lastLogin !== today && lastLogin !== yesterdayStr && (saved?.streakFreezes ?? 0) > 0
+      ? (saved?.streakFreezes ?? 1) - 1
+      : (saved?.streakFreezes ?? 0),
+    achievements: saved?.achievements ?? [],
+    lastActiveTime: Date.now(),
   }
 }
 
@@ -70,11 +88,35 @@ export default function App() {
   const [state, setState] = useState<GameState>(buildInitialState)
   const [tab, setTab] = useState<Tab>('train')
   const [comboCount, setComboCount] = useState(0)
+  const [offlineGain, setOfflineGain] = useState<{ gain: number; seconds: number } | null>(null)
+  const [achievementQueue, setAchievementQueue] = useState<string[]>([])
+  const [currentAchievement, setCurrentAchievement] = useState<string | null>(null)
+
   const comboCountRef = useRef(0)
   const comboTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
 
+  // Unlock achievement (deduped)
+  const unlock = useCallback((id: string) => {
+    setState(s => {
+      if (s.achievements.includes(id)) return s
+      setAchievementQueue(q => [...q, id])
+      return { ...s, achievements: [...s.achievements, id] }
+    })
+  }, [])
+
+  // Process achievement queue one-by-one
+  useEffect(() => {
+    if (!currentAchievement && achievementQueue.length > 0) {
+      setCurrentAchievement(achievementQueue[0])
+      setAchievementQueue(q => q.slice(1))
+      const t = setTimeout(() => setCurrentAchievement(null), 3200)
+      return () => clearTimeout(t)
+    }
+  }, [achievementQueue, currentAchievement])
+
+  // VK Bridge
   useEffect(() => {
     bridge.send('VKWebAppInit').catch(() => {})
     bridge.send('VKWebAppGetUserInfo')
@@ -82,6 +124,22 @@ export default function App() {
       .catch(() => {})
   }, [])
 
+  // Offline earnings on mount
+  useEffect(() => {
+    const saved = loadGame()
+    if (!saved?.lastActiveTime || !stateRef.current.powerPerSecond) return
+    const secondsAway = (Date.now() - saved.lastActiveTime) / 1000
+    if (secondsAway < 600) return // less than 10 min — skip
+    const clampedSeconds = Math.min(secondsAway, MAX_OFFLINE_SECONDS)
+    const gain = Math.floor(clampedSeconds * stateRef.current.powerPerSecond)
+    if (gain <= 0) return
+    setState(s => ({ ...s, power: s.power + gain, totalPower: s.totalPower + gain }))
+    setOfflineGain({ gain, seconds: Math.floor(clampedSeconds) })
+    if (secondsAway >= 3600) unlock('offline_1h')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Idle tick
   useEffect(() => {
     const interval = setInterval(() => {
       setState(s => {
@@ -93,11 +151,13 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
+  // Auto-save
   useEffect(() => {
     const interval = setInterval(() => saveGame(stateRef.current), 5000)
     return () => clearInterval(interval)
   }, [])
 
+  // Daily reset
   useEffect(() => {
     const interval = setInterval(() => {
       const today = todayStr()
@@ -109,43 +169,68 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
+  // Achievement watchers
+  const level = getLevel(state.totalPower)
+  useEffect(() => {
+    if (state.streak >= 7) unlock('streak_7')
+    else if (state.streak >= 3) unlock('streak_3')
+  }, [state.streak, unlock])
+  useEffect(() => {
+    if (level.label === 'Спортсмен') unlock('level_sportsman')
+    else if (level.label === 'Любитель') unlock('level_amateur')
+  }, [level.label, unlock])
+
   const handleClick = useCallback(() => {
     comboCountRef.current += 1
     const c = comboCountRef.current
     setComboCount(c)
-
     const multiplier = c >= 10 ? 3 : c >= 5 ? 2 : 1
 
     setState(s => {
       if (s.dailyClicksLeft <= 0) return s
+      const newClicks = s.totalClicks + 1
       return {
         ...s,
         power: s.power + multiplier,
         totalPower: s.totalPower + multiplier,
+        totalClicks: newClicks,
         dailyClicksLeft: s.dailyClicksLeft - 1,
       }
     })
+
+    // Click-based achievements
+    const newClicks = comboCountRef.current
+    const totalAfter = stateRef.current.totalClicks + 1
+    if (totalAfter === 1) unlock('first_click')
+    if (totalAfter === 50) unlock('clicks_50')
+    if (totalAfter === 500) unlock('clicks_500')
+    if (c >= 5 && c < 6) unlock('combo_x2')
+    if (c >= 10 && c < 11) unlock('combo_x3')
+    void newClicks
 
     if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
     comboTimerRef.current = setTimeout(() => {
       comboCountRef.current = 0
       setComboCount(0)
     }, COMBO_RESET_MS)
-  }, [])
+  }, [unlock])
 
   const handleCompleteChallenge = useCallback((id: string) => {
     setState(s => {
       if (s.completedChallenges.includes(id)) return s
       const ch = DAILY_CHALLENGES.find(c => c.id === id)
       if (!ch) return s
+      const newCompleted = [...s.completedChallenges, id]
+      if (newCompleted.length === 1) setTimeout(() => unlock('first_challenge'), 0)
+      if (newCompleted.length === DAILY_CHALLENGES.length) setTimeout(() => unlock('all_challenges'), 100)
       return {
         ...s,
         power: s.power + ch.reward,
         totalPower: s.totalPower + ch.reward,
-        completedChallenges: [...s.completedChallenges, id],
+        completedChallenges: newCompleted,
       }
     })
-  }, [])
+  }, [unlock])
 
   const handleBuy = useCallback((id: string) => {
     setState(s => {
@@ -154,25 +239,42 @@ export default function App() {
       const t = s.trainers[idx]
       const cost = getTrainerCost(t, t.count)
       if (s.power < cost) return s
+      const wasFirst = s.trainers.every(tr => tr.count === 0)
+      if (wasFirst) setTimeout(() => unlock('first_trainer'), 0)
       const newTrainers = s.trainers.map((tr, i) =>
         i === idx ? { ...tr, count: tr.count + 1 } : tr
       )
       const pps = newTrainers.reduce((sum, tr) => sum + tr.baseIncome * tr.count, 0)
       return { ...s, power: s.power - cost, trainers: newTrainers, powerPerSecond: pps }
     })
+  }, [unlock])
+
+  const handleBuyFreeze = useCallback(() => {
+    setState(s => {
+      if (s.power < FREEZE_COST || s.streakFreezes > 0) return s
+      return { ...s, power: s.power - FREEZE_COST, streakFreezes: 1 }
+    })
   }, [])
 
-  const level = getLevel(state.totalPower)
   const currentLevelIdx = LEVELS.findIndex(l => l.label === level.label)
   const nextLevel = LEVELS[currentLevelIdx + 1]
   const progress = nextLevel
     ? Math.min(100, ((state.totalPower - level.min) / (nextLevel.min - level.min)) * 100)
     : 100
-
   const comboMultiplier = comboCount >= 10 ? 3 : comboCount >= 5 ? 2 : 1
 
   return (
     <div className="app">
+      {offlineGain && (
+        <OfflineEarnings
+          gain={offlineGain.gain}
+          seconds={offlineGain.seconds}
+          onCollect={() => setOfflineGain(null)}
+        />
+      )}
+
+      <AchievementToast achievementId={currentAchievement} />
+
       <div className="app-header">
         <span className="app-title">🏋️ Фитнес-клуб</span>
         <div className="app-header-right">
@@ -191,6 +293,8 @@ export default function App() {
           powerPerSecond={state.powerPerSecond}
           totalPower={state.totalPower}
           userName={state.userName}
+          streakFreezes={state.streakFreezes}
+          onBuyFreeze={handleBuyFreeze}
         />
 
         {tab === 'train' && (

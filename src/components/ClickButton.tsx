@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react'
 import './ClickButton.css'
 
+const EXERCISES = ['Отжимание!', 'Присед!', 'Выпад!', 'Планка!', 'Берпи!', 'Прыжок!']
+
 interface Props {
-  level: { label: string; emoji: string }
+  level: { label: string; character: string }
   comboMultiplier: number
   comboCount: number
   dailyClicksLeft: number
@@ -12,6 +14,7 @@ interface Props {
 
 export function ClickButton({ level, comboMultiplier, comboCount, dailyClicksLeft, maxDailyClicks, onСlick }: Props) {
   const [pressed, setPressed] = useState(false)
+  const [exercise, setExercise] = useState('')
   const [floats, setFloats] = useState<{ id: number; x: number; y: number; value: number }[]>([])
   const isExhausted = dailyClicksLeft <= 0
 
@@ -19,12 +22,14 @@ export function ClickButton({ level, comboMultiplier, comboCount, dailyClicksLef
     if (isExhausted) return
     onСlick()
     setPressed(true)
-    setTimeout(() => setPressed(false), 100)
+    setExercise(EXERCISES[Math.floor(Math.random() * EXERCISES.length)])
+    setTimeout(() => setPressed(false), 120)
+    setTimeout(() => setExercise(''), 600)
 
     const rect = e.currentTarget.getBoundingClientRect()
     const id = Date.now() + Math.random()
     setFloats(prev => [...prev, { id, x: e.clientX - rect.left, y: e.clientY - rect.top, value: comboMultiplier }])
-    setTimeout(() => setFloats(prev => prev.filter(f => f.id !== id)), 700)
+    setTimeout(() => setFloats(prev => prev.filter(f => f.id !== id)), 750)
   }, [onСlick, isExhausted, comboMultiplier])
 
   const progressPercent = (dailyClicksLeft / maxDailyClicks) * 100
@@ -38,14 +43,18 @@ export function ClickButton({ level, comboMultiplier, comboCount, dailyClicksLef
       )}
 
       <button
-        className={`click-btn ${pressed ? 'pressed' : ''} ${isExhausted ? 'exhausted' : ''}`}
+        className={`click-btn ${pressed ? 'pressed' : ''} ${isExhausted ? 'exhausted' : ''} level-${level.label}`}
         onClick={handleClick}
       >
-        <span className="click-emoji">{isExhausted ? '😴' : level.emoji}</span>
-        <span className="click-label">{isExhausted ? 'Отдых' : level.label}</span>
-        <span className="click-hint">
-          {isExhausted ? 'Выполни задание →' : `+${comboMultiplier} силы`}
+        <span className={`click-character ${pressed ? 'jump' : ''}`}>
+          {isExhausted ? '😴' : level.character}
         </span>
+        {exercise && <span className="exercise-label">{exercise}</span>}
+        {!exercise && (
+          <span className="click-hint">
+            {isExhausted ? 'Выполни задание →' : `+${comboMultiplier} силы`}
+          </span>
+        )}
       </button>
 
       <div className="daily-progress">

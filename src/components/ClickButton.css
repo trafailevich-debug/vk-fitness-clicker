@@ -41,10 +41,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  position: relative;
+  overflow: visible;
 }
 
 .click-btn:active,
@@ -60,21 +62,38 @@
   cursor: default;
 }
 
-.click-emoji {
-  font-size: 54px;
+.click-character {
+  font-size: 56px;
   line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  display: block;
+  transition: transform 0.15s ease;
 }
 
-.click-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+.click-character.jump {
+  animation: char-jump 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes char-jump {
+  0%   { transform: translateY(0) scale(1); }
+  50%  { transform: translateY(-12px) scale(1.15); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 .click-hint {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.55);
+}
+
+.exercise-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FF9F4A;
+  animation: exercise-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes exercise-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 .daily-progress {
@@ -113,12 +132,12 @@
   font-weight: 800;
   color: #FF9F4A;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-  animation: float-up 0.7s ease-out forwards;
+  animation: float-up 0.75s ease-out forwards;
   white-space: nowrap;
 }
 
 @keyframes float-up {
   0%   { opacity: 1; transform: translateY(0) scale(1); }
   40%  { transform: translateY(-28px) scale(1.25); }
-  100% { opacity: 0; transform: translateY(-65px) scale(0.85); }
+  100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
 }
