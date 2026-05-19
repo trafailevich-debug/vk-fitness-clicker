@@ -5,20 +5,36 @@
 }
 
 .diary-card {
-  background: linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-top-color: rgba(255,255,255,0.18);
+  background: linear-gradient(
+    170deg,
+    rgba(255,255,255,0.09) 0%,
+    rgba(255,255,255,0.04) 40%,
+    rgba(255,255,255,0.02) 100%
+  );
+  border: 1px solid rgba(255,255,255,0.11);
+  border-top-color: rgba(255,255,255,0.30);
   border-radius: 20px;
   padding: 16px;
-  backdrop-filter: blur(20px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.25);
+  backdrop-filter: blur(60px) saturate(200%) brightness(1.06);
+  -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    0 8px 32px rgba(0,0,0,0.18);
 }
 
 /* ── Streak ── */
 .streak-card {
-  background: linear-gradient(160deg, rgba(251,191,36,0.14) 0%, rgba(245,158,11,0.06) 100%);
-  border-color: rgba(251,191,36,0.25);
-  border-top-color: rgba(253,230,138,0.35);
+  background: linear-gradient(
+    170deg,
+    rgba(251,191,36,0.12) 0%,
+    rgba(255,255,255,0.04) 60%,
+    rgba(255,255,255,0.02) 100%
+  );
+  border-color: rgba(251,191,36,0.20);
+  border-top-color: rgba(253,230,138,0.40);
+  box-shadow:
+    inset 0 1px 0 rgba(253,230,138,0.22),
+    0 8px 32px rgba(0,0,0,0.18);
 }
 
 .streak-card-top {
