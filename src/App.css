@@ -20,79 +20,173 @@ body {
   position: relative;
 }
 
-/* ── Animated gym background ── */
+/* ══════════════════════════════════════════════════════
+   3D GYM BACKGROUND
+══════════════════════════════════════════════════════ */
 .app-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(150deg, #06060f 0%, #100518 50%, #060b14 100%);
+  background: radial-gradient(ellipse 140% 90% at 50% 115%,
+    #1c0608 0%, #0e0220 35%, #04091a 65%, #030509 100%);
   overflow: hidden;
 }
 
+/* 3D perspective floor grid */
+.bg-floor-scene {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 54%;
+  perspective: 360px;
+  perspective-origin: 50% -25%;
+  overflow: hidden;
+}
+
+.bg-floor {
+  position: absolute;
+  bottom: 0;
+  left: -70%;
+  width: 240%;
+  height: 340%;
+  transform-origin: 50% 100%;
+  transform: rotateX(80deg);
+  background-image:
+    linear-gradient(rgba(255, 82, 30, 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 82, 30, 0.07) 1px, transparent 1px);
+  background-size: 52px 52px;
+  animation: floor-march 1.5s linear infinite;
+}
+
+@keyframes floor-march {
+  from { background-position: 0 0; }
+  to   { background-position: 0 52px; }
+}
+
+/* Fade floor at bottom edge */
+.bg-floor-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 55%;
+  background: linear-gradient(to top, rgba(4,5,15,0.95) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Ceiling spotlight cones */
+.bg-spot {
+  position: absolute;
+  top: 0;
+  pointer-events: none;
+  transform-origin: top center;
+}
+
+.bg-spot-1 {
+  left: 15%;
+  width: 70%;
+  height: 80%;
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    transparent 84deg,
+    rgba(255, 140, 60, 0.08) 89deg,
+    rgba(255, 180, 90, 0.05) 92deg,
+    rgba(255, 140, 60, 0.08) 95deg,
+    transparent 100deg
+  );
+  animation: spot-swing-1 12s ease-in-out infinite;
+}
+
+.bg-spot-2 {
+  left: 0%;
+  width: 100%;
+  height: 70%;
+  background: conic-gradient(
+    from 180deg at 65% 0%,
+    transparent 85deg,
+    rgba(255, 100, 40, 0.05) 90deg,
+    transparent 95deg
+  );
+  animation: spot-swing-2 15s ease-in-out infinite;
+}
+
+@keyframes spot-swing-1 {
+  0%, 100% { transform: rotate(-20deg); opacity: 0.9; }
+  50%       { transform: rotate(20deg);  opacity: 1; }
+}
+
+@keyframes spot-swing-2 {
+  0%, 100% { transform: rotate(15deg);  opacity: 0.7; }
+  50%       { transform: rotate(-15deg); opacity: 1; }
+}
+
+/* Ambient color glows */
 .app-bg-glow {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(70px);
+  filter: blur(85px);
 }
 
 .glow-1 {
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(255, 80, 20, 0.2) 0%, transparent 70%);
-  top: -100px;
-  left: -80px;
-  animation: glow-move-1 11s ease-in-out infinite alternate;
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, rgba(255, 65, 20, 0.24) 0%, transparent 68%);
+  top: -140px;
+  left: -70px;
+  animation: glow-drift-1 13s ease-in-out infinite alternate;
 }
 
 .glow-2 {
   width: 340px;
   height: 340px;
-  background: radial-gradient(circle, rgba(255, 155, 0, 0.14) 0%, transparent 70%);
-  bottom: 80px;
-  right: -70px;
-  animation: glow-move-2 14s ease-in-out infinite alternate;
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.16) 0%, transparent 68%);
+  bottom: 50px;
+  right: -90px;
+  animation: glow-drift-2 17s ease-in-out infinite alternate;
 }
 
 .glow-3 {
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(circle, rgba(60, 100, 255, 0.07) 0%, transparent 70%);
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(80, 55, 255, 0.09) 0%, transparent 70%);
   top: 38%;
-  left: 25%;
-  animation: glow-move-3 9s ease-in-out infinite alternate;
+  left: 22%;
+  animation: glow-drift-3 10s ease-in-out infinite alternate;
 }
 
-@keyframes glow-move-1 {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(70px, 90px) scale(1.3); }
+@keyframes glow-drift-1 {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(85px, 105px) scale(1.35); }
 }
-@keyframes glow-move-2 {
-  0%   { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(-90px, -70px) scale(1.25); }
+@keyframes glow-drift-2 {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-90px, -65px) scale(1.25); }
 }
-@keyframes glow-move-3 {
-  0%   { transform: translate(0, 0); opacity: 0.7; }
-  100% { transform: translate(50px, -60px); opacity: 1; }
+@keyframes glow-drift-3 {
+  from { transform: translate(0, 0); opacity: 0.5; }
+  to   { transform: translate(55px, -55px); opacity: 1; }
 }
 
-/* Gym floor grid */
-.app-bg-grid {
+/* Floating gym equipment */
+.bg-equipment {
   position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 100, 50, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 100, 50, 0.045) 1px, transparent 1px);
-  background-size: 44px 44px;
-  animation: grid-scroll 22s linear infinite;
+  pointer-events: none;
+  opacity: 0.055;
+  filter: blur(2px);
+  animation: equip-float ease-in-out infinite;
+  line-height: 1;
+  user-select: none;
 }
 
-@keyframes grid-scroll {
-  0%   { background-position: 0 0; }
-  100% { background-position: 44px 44px; }
+@keyframes equip-float {
+  0%, 100% { transform: translateY(0px) rotateZ(0deg) scale(1); }
+  33%       { transform: translateY(-20px) rotateZ(7deg) scale(1.06); }
+  66%       { transform: translateY(-9px) rotateZ(-5deg) scale(0.96); }
 }
 
-/* Energy particles floating up */
+/* Rising energy particles */
 .app-bg-particle {
   position: absolute;
   bottom: -12px;
@@ -103,28 +197,38 @@ body {
 
 @keyframes particle-rise {
   0%   { transform: translateY(0) scale(0.4); opacity: 0; }
-  12%  { opacity: 0.8; }
-  80%  { opacity: 0.25; }
-  100% { transform: translateY(-108vh) scale(1.3); opacity: 0; }
+  10%  { opacity: 0.75; }
+  80%  { opacity: 0.2; }
+  100% { transform: translateY(-112vh) scale(1.3); opacity: 0; }
 }
 
-/* ── Header ── */
+/* ══════════════════════════════════════════════════════
+   HEADER — iOS 26 Liquid Glass
+══════════════════════════════════════════════════════ */
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 52px 20px 14px;
-  background: rgba(255, 255, 255, 0.055);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 52px 20px 16px;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.055) 100%
+  );
+  backdrop-filter: blur(40px) saturate(210%) brightness(1.06);
+  -webkit-backdrop-filter: blur(40px) saturate(210%) brightness(1.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 1px 0 rgba(0, 0, 0, 0.18);
 }
 
 .app-title {
   font-size: 20px;
   font-weight: 700;
   color: #fff;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .app-header-right {
@@ -134,35 +238,41 @@ body {
 }
 
 .streak-badge {
-  background: rgba(255, 149, 0, 0.2);
-  border: 1px solid rgba(255, 149, 0, 0.4);
-  color: #FF9500;
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.28), rgba(255, 100, 30, 0.18));
+  border: 1px solid rgba(255, 149, 0, 0.45);
+  border-top-color: rgba(255, 210, 90, 0.55);
+  color: #FFB340;
   font-size: 13px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 12px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 210, 100, 0.22);
   animation: streak-pulse 2s ease-in-out infinite;
 }
 
 @keyframes streak-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 149, 0, 0); }
-  50%       { box-shadow: 0 0 12px 2px rgba(255, 149, 0, 0.25); }
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255,210,100,0.22), 0 0 0 0 rgba(255,149,0,0); }
+  50%       { box-shadow: inset 0 1px 0 rgba(255,210,100,0.22), 0 0 14px 3px rgba(255,149,0,0.3); }
 }
 
 .app-level {
   font-size: 13px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.07));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.94);
+  padding: 4px 12px;
+  border-radius: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-/* ── Progress bar ── */
+/* ══════════════════════════════════════════════════════
+   PROGRESS BAR
+══════════════════════════════════════════════════════ */
 .progress-bar {
   height: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
   position: relative;
   overflow: hidden;
 }
@@ -171,7 +281,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
   animation: progress-shimmer 2.5s linear infinite;
 }
 
@@ -184,10 +294,12 @@ body {
   height: 100%;
   background: linear-gradient(90deg, #FF4500, #FF6B35, #FF9F4A);
   transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 8px rgba(255, 100, 30, 0.6);
+  box-shadow: 0 0 8px rgba(255, 100, 30, 0.65);
 }
 
-/* ── Content ── */
+/* ══════════════════════════════════════════════════════
+   CONTENT
+══════════════════════════════════════════════════════ */
 .app-content {
   padding: 14px 14px 100px;
   display: flex;

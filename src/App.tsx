@@ -33,13 +33,51 @@ const BG_PARTICLES = [
   { id: 9, size: 4, left: 94, dur: 12, delay: 5.5, color: '#FF5722' },
 ]
 
+const BG_EQUIPMENT = [
+  { emoji: '🏋️', size: 72, left: 6,  top: 18, dur: 8,  delay: 0 },
+  { emoji: '💪',  size: 58, left: 80, top: 12, dur: 10, delay: 1.8 },
+  { emoji: '🎽',  size: 52, left: 52, top: 58, dur: 9,  delay: 3.5 },
+  { emoji: '⚡',  size: 48, left: 14, top: 62, dur: 11, delay: 2.2 },
+  { emoji: '🔥',  size: 44, left: 88, top: 52, dur: 7,  delay: 4.5 },
+  { emoji: '🥇',  size: 42, left: 40, top: 25, dur: 12, delay: 1 },
+]
+
 function AppBackground() {
   return (
     <div className="app-bg" aria-hidden="true">
+      {/* 3D floor */}
+      <div className="bg-floor-scene">
+        <div className="bg-floor" />
+      </div>
+      <div className="bg-floor-fade" />
+
+      {/* Ceiling spotlights */}
+      <div className="bg-spot bg-spot-1" />
+      <div className="bg-spot bg-spot-2" />
+
+      {/* Ambient glows */}
       <div className="app-bg-glow glow-1" />
       <div className="app-bg-glow glow-2" />
       <div className="app-bg-glow glow-3" />
-      <div className="app-bg-grid" />
+
+      {/* Floating gym equipment */}
+      {BG_EQUIPMENT.map((e, i) => (
+        <div
+          key={i}
+          className="bg-equipment"
+          style={{
+            fontSize: e.size,
+            left: `${e.left}%`,
+            top: `${e.top}%`,
+            animationDuration: `${e.dur}s`,
+            animationDelay: `${e.delay}s`,
+          }}
+        >
+          {e.emoji}
+        </div>
+      ))}
+
+      {/* Energy particles */}
       {BG_PARTICLES.map(p => (
         <div
           key={p.id}

@@ -276,32 +276,34 @@ export function TrainersList({
         </div>
       )}
 
-      {/* ── Buy trainers ── */}
+      {/* ── Buy trainers grid ── */}
       {locked.length > 0 && (
         <div className="t-section">
           <div className="t-section-title">Купить тренажёры</div>
-          {locked.map(t => {
-            const cost = getTrainerCost(t, t.count)
-            const can = power >= cost
-            const w = TRAINER_WORKOUTS[t.id]
-            return (
-              <div key={t.id} className={`t-row buy-row ${can ? 'can' : ''}`}>
-                <span className="t-emoji">{t.emoji}</span>
-                <div className="t-info">
-                  <span className="t-name">{t.name}</span>
-                  <span className="t-desc">
-                    {w.type === 'tap'
-                      ? `👊 ${w.target}×  → +${w.reward}💪`
-                      : `✊ ${w.duration}с → +${w.reward}💪`}
+          <div className="buy-grid">
+            {locked.map(t => {
+              const cost = getTrainerCost(t, t.count)
+              const can = power >= cost
+              const w = TRAINER_WORKOUTS[t.id]
+              return (
+                <div key={t.id} className={`buy-card ${can ? 'can' : ''}`}>
+                  <span className="buy-card-emoji">{t.emoji}</span>
+                  <span className="buy-card-name">{t.name}</span>
+                  <span className="buy-card-desc">
+                    {w.type === 'tap' ? `${w.target}× тап` : `${w.duration}с удержи`}
                   </span>
+                  <span className="buy-card-reward">+{w.reward} 💪</span>
+                  <button
+                    className="buy-card-btn"
+                    disabled={!can}
+                    onClick={() => can && onBuy(t.id)}
+                  >
+                    💪 {formatNumber(cost)}
+                  </button>
                 </div>
-                <button className="buy-btn" disabled={!can} onClick={() => onBuy(t.id)}>
-                  <span className="buy-cost">💪 {formatNumber(cost)}</span>
-                  <span className="buy-lbl">Купить</span>
-                </button>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
