@@ -4,6 +4,8 @@ import { StatsBar } from './components/StatsBar'
 import { ClickButton } from './components/ClickButton'
 import { TrainersList } from './components/TrainersList'
 import { DailyChallenges } from './components/DailyChallenges'
+import { ProgressDiary } from './components/ProgressDiary'
+import { RewardsPanel } from './components/RewardsPanel'
 import { TabBar } from './components/TabBar'
 import { OfflineEarnings } from './components/OfflineEarnings'
 import { AchievementToast } from './components/AchievementToast'
@@ -18,7 +20,7 @@ const TICK_MS = 200
 const COMBO_RESET_MS = 1500
 const FREEZE_COST = 200
 
-export type Tab = 'train' | 'challenges' | 'upgrades'
+export type Tab = 'train' | 'challenges' | 'diary' | 'rewards'
 
 const BG_PARTICLES = [
   { id: 0, size: 3, left: 7,  dur: 9,  delay: 0,   color: '#FF5722' },
@@ -423,15 +425,30 @@ export default function App() {
         />
 
         {tab === 'train' && (
-          <ClickButton
-            level={level}
-            comboMultiplier={comboMultiplier}
-            comboCount={comboCount}
-            dailyClicksLeft={state.dailyClicksLeft}
-            maxDailyClicks={effectiveMaxClicks}
-            strengthBonus={state.characterStats.strength}
-            onСlick={handleClick}
-          />
+          <>
+            <ClickButton
+              level={level}
+              comboMultiplier={comboMultiplier}
+              comboCount={comboCount}
+              dailyClicksLeft={state.dailyClicksLeft}
+              maxDailyClicks={effectiveMaxClicks}
+              strengthBonus={state.characterStats.strength}
+              onСlick={handleClick}
+            />
+            <TrainersList
+              trainers={state.trainers}
+              power={state.power}
+              characterStats={state.characterStats}
+              trainerLastWorkout={state.trainerLastWorkout}
+              selectedProgram={state.selectedProgram}
+              programDone={programDone}
+              programAlreadyClaimed={programAlreadyClaimed}
+              onBuy={handleBuy}
+              onWorkoutComplete={handleWorkoutComplete}
+              onSelectProgram={handleSelectProgram}
+              onProgramComplete={handleProgramComplete}
+            />
+          </>
         )}
 
         {tab === 'challenges' && (
@@ -441,19 +458,18 @@ export default function App() {
           />
         )}
 
-        {tab === 'upgrades' && (
-          <TrainersList
-            trainers={state.trainers}
-            power={state.power}
-            characterStats={state.characterStats}
-            trainerLastWorkout={state.trainerLastWorkout}
-            selectedProgram={state.selectedProgram}
-            programDone={programDone}
-            programAlreadyClaimed={programAlreadyClaimed}
-            onBuy={handleBuy}
-            onWorkoutComplete={handleWorkoutComplete}
-            onSelectProgram={handleSelectProgram}
-            onProgramComplete={handleProgramComplete}
+        {tab === 'diary' && (
+          <ProgressDiary
+            state={state}
+            onBuyFreeze={handleBuyFreeze}
+          />
+        )}
+
+        {tab === 'rewards' && (
+          <RewardsPanel
+            unlockedIds={state.achievements}
+            totalClicks={state.totalClicks}
+            streak={state.streak}
           />
         )}
       </div>
