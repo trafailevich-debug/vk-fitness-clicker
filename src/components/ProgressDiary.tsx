@@ -1,4 +1,4 @@
-import { GameState, LEVELS, DAILY_CHALLENGES, PROGRAMS, getLevel, formatNumber } from '../store/gameStore'
+import { GameState, LEVELS, PROGRAMS, getDailyChallenges, getLevel, formatNumber } from '../store/gameStore'
 import './ProgressDiary.css'
 
 interface Props {
@@ -16,8 +16,9 @@ export function ProgressDiary({ state, onBuyFreeze }: Props) {
     ? Math.min(100, ((state.totalPower - level.min) / (nextLevel.min - level.min)) * 100)
     : 100
 
-  const challengesDone = state.completedChallenges.length
-  const challengesTotal = DAILY_CHALLENGES.length
+  const todayChallenges = getDailyChallenges()
+  const challengesDone = todayChallenges.filter(c => state.completedChallenges.includes(c.id)).length
+  const challengesTotal = todayChallenges.length
 
   const midnight = new Date().setHours(0, 0, 0, 0)
   const workoutsDoneToday = state.trainers.filter(

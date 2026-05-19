@@ -12,9 +12,9 @@ import { AchievementToast } from './components/AchievementToast'
 import { Leaderboard } from './components/Leaderboard'
 import { VipWorkouts } from './components/VipWorkouts'
 import {
-  GameState, Trainer, TRAINERS, LEVELS, DAILY_CHALLENGES, PROGRAMS,
+  GameState, Trainer, TRAINERS, LEVELS, ALL_DAILY_CHALLENGES, PROGRAMS,
   MAX_DAILY_CLICKS, MAX_OFFLINE_SECONDS, ENDURANCE_CLICKS_PER_LEVEL,
-  getLevel, getTrainerCost, saveGame, loadGame, todayStr, todayMidnightMs,
+  getLevel, getTrainerCost, getDailyChallenges, saveGame, loadGame, todayStr, todayMidnightMs,
   formatNumber,
 } from './store/gameStore'
 import './App.css'
@@ -95,7 +95,7 @@ function StatusBanner({ totalPower, completedChallenges }: { totalPower: number;
   }
 
   const reqs = nextLevel.nextRequiredChallenges
-  const challenge = DAILY_CHALLENGES
+  const challenge = ALL_DAILY_CHALLENGES
 
   return (
     <div className="status-banner">
@@ -365,11 +365,12 @@ export default function App() {
   const handleCompleteChallenge = useCallback((id: string) => {
     setState(s => {
       if (s.completedChallenges.includes(id)) return s
-      const ch = DAILY_CHALLENGES.find(c => c.id === id)
+      const ch = ALL_DAILY_CHALLENGES.find(c => c.id === id)
       if (!ch) return s
       const newCompleted = [...s.completedChallenges, id]
       if (newCompleted.length === 1) setTimeout(() => unlock('first_challenge'), 0)
-      const allDone = newCompleted.length === DAILY_CHALLENGES.length
+      const todayChallenges = getDailyChallenges()
+      const allDone = todayChallenges.every(c => newCompleted.includes(c.id))
       if (allDone) {
         setTimeout(() => unlock('all_challenges'), 100)
         setTimeout(() => unlock('vip_unlocked'), 200)
@@ -502,7 +503,7 @@ export default function App() {
           <DailyChallenges
             completedChallenges={state.completedChallenges}
             onComplete={handleCompleteChallenge}
-            vipJustUnlocked={vipUnlocked && state.completedChallenges.length === DAILY_CHALLENGES.length}
+            vipJustUnlocked={vipUnlocked}
           />
         )}
 

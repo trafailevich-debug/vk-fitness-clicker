@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { DAILY_CHALLENGES } from '../store/gameStore'
+import { getDailyChallenges } from '../store/gameStore'
 import './DailyChallenges.css'
 
 interface Props {
@@ -9,25 +9,79 @@ interface Props {
 }
 
 const CHALLENGE_DURATIONS: Record<string, number> = {
-  water:      12,
-  headrotate: 20,
-  steps100:   30,
-  stretch:    50,
-  squat:      45,
-  pushup:     35,
-  breathe:    40,
-  walk:       60,
+  water:         12,
+  herbal_tea:    15,
+  water_lemon:   12,
+  headrotate:    20,
+  neck_stretch:  25,
+  shoulder_roll: 20,
+  wrist_rotation:15,
+  ankle_rotation:15,
+  arm_circles:   18,
+  side_stretch:  25,
+  hip_rotation:  20,
+  toe_touch:     20,
+  steps100:      30,
+  walk:          60,
+  calf_raises:   25,
+  march_place:   40,
+  jumping_jacks: 30,
+  knee_raise:    25,
+  squat:         45,
+  pushup:        35,
+  wall_sit:      35,
+  balance_stand: 35,
+  heel_raises:   25,
+  stretch:       50,
+  cat_cow:       30,
+  chest_opener:  25,
+  desk_stretch:  25,
+  back_stretch:  30,
+  breathe:       40,
+  eye_rest:      30,
+  posture:       25,
+  fresh_air:     30,
+  cold_wash:     20,
+  no_phone:      50,
+  massage_hands: 30,
 }
 
 const CHALLENGE_TIPS: Record<string, string> = {
-  water:      'Пей медленно, маленькими глотками 💧',
-  headrotate: 'Движения мягкие, без рывков 🔄',
-  steps100:   'Шагай ровно, считай вслух 👟',
-  stretch:    'Дыши глубоко, тянись плавно 🌬️',
-  squat:      'Спина ровная, колени за носки не заходят 🦵',
-  pushup:     'Тело прямое как доска 💪',
-  breathe:    'Вдох 4с → Задержка 4с → Выдох 6с 🌬️',
-  walk:       'Голова поднята, руки в движении 🚶',
+  water:         'Пей медленно, маленькими глотками 💧',
+  herbal_tea:    'Наслаждайся ароматом, не торопись 🍵',
+  water_lemon:   'Лучше пить не ледяную, а комнатную 🍋',
+  headrotate:    'Движения мягкие, без рывков 🔄',
+  neck_stretch:  'Плечи расслаблены, не поднимай их 🦢',
+  shoulder_roll: 'Большие круги, максимальная амплитуда 🔁',
+  wrist_rotation:'Пальцы расслаблены, кисти свободны 🤲',
+  ankle_rotation:'Сядь удобно, стопа полностью расслаблена 🦶',
+  arm_circles:   'Рука прямая, круги максимально большие 🙆',
+  side_stretch:  'Не наклоняйся вперёд — строго в сторону ↔️',
+  hip_rotation:  'Колени чуть согнуты, корпус прямой 🌀',
+  toe_touch:     'Не сгибай колени, тянись медленно 🖐️',
+  steps100:      'Шагай ровно, считай вслух 👟',
+  walk:          'Голова поднята, руки в движении 🚶',
+  calf_raises:   'Задержись наверху — чувствуй напряжение икры 🦵',
+  march_place:   'Колени выше — активнее кровоток 🥾',
+  jumping_jacks: 'Руки до конца вверх — полная амплитуда 🤸',
+  knee_raise:    'Спина прямая, не наклоняйся вперёд 🏃',
+  squat:         'Спина ровная, колени за носки не заходят 🦵',
+  pushup:        'Тело прямое как доска 💪',
+  wall_sit:      'Угол 90° — бёдра параллельны полу 🪑',
+  balance_stand: 'Найди точку фокуса взглядом — так легче 🧘',
+  heel_raises:   'Удерживай баланс, не держись за стену если можешь 👣',
+  stretch:       'Дыши глубоко, тянись плавно 🌬️',
+  cat_cow:       'Синхронизируй движение с дыханием 🐱',
+  chest_opener:  'Чувствуй раскрытие груди, не форсируй 🫁',
+  desk_stretch:  'Медленно, не рвись — мышцы должны отдохнуть 💼',
+  back_stretch:  'Расслабь поясницу, не держи её в напряжении 🦴',
+  breathe:       'Вдох 4с → Задержка 4с → Выдох 6с 🌬️',
+  eye_rest:      'Смотри в даль, не напрягай глаза 👁️',
+  posture:       'Представь нитку, тянущую макушку вверх 🪆',
+  fresh_air:     'Дыши медленно и глубоко носом 🌿',
+  cold_wash:     'Смочи и запястья — там много нервных окончаний 🧊',
+  no_phone:      'Замечай ощущения в теле и звуки вокруг 📵',
+  massage_hands: 'Надавливай уверенно, прорабатывай каждый палец 🤝',
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -52,8 +106,9 @@ export function DailyChallenges({ completedChallenges, onComplete, vipJustUnlock
   const [readyIds, setReadyIds] = useState<string[]>([])
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const allDone = completedChallenges.length === DAILY_CHALLENGES.length
-  const totalReward = DAILY_CHALLENGES.reduce((s, c) => s + c.reward, 0)
+  const todayChallenges = getDailyChallenges()
+  const allDone = todayChallenges.every(c => completedChallenges.includes(c.id))
+  const totalReward = todayChallenges.reduce((s, c) => s + c.reward, 0)
 
   useEffect(() => {
     if (!activeId) return
@@ -83,8 +138,8 @@ export function DailyChallenges({ completedChallenges, onComplete, vipJustUnlock
     return m > 0 ? `${m}:${String(sec).padStart(2, '0')}` : `${sec}с`
   }
 
-  const doneCount = completedChallenges.length
-  const total = DAILY_CHALLENGES.length
+  const doneCount = todayChallenges.filter(c => completedChallenges.includes(c.id)).length
+  const total = todayChallenges.length
   const progressPct = (doneCount / total) * 100
 
   return (
@@ -126,7 +181,7 @@ export function DailyChallenges({ completedChallenges, onComplete, vipJustUnlock
       )}
 
       {/* Challenge list */}
-      {DAILY_CHALLENGES.map(c => {
+      {todayChallenges.map(c => {
         const done = completedChallenges.includes(c.id)
         const isActive = activeId === c.id
         const isReady = readyIds.includes(c.id)
