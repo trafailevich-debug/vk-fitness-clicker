@@ -22,6 +22,21 @@ export interface Achievement {
   desc: string
 }
 
+export interface CharacterStats {
+  strength: number   // +N силы за клик
+  endurance: number  // +30 дневных кликов за уровень
+}
+
+export interface Program {
+  id: string
+  name: string
+  emoji: string
+  desc: string
+  trainerIds: string[]
+  statBonus: Partial<CharacterStats>
+  powerBonus: number
+}
+
 export interface GameState {
   power: number
   totalPower: number
@@ -37,10 +52,45 @@ export interface GameState {
   streakFreezes: number
   achievements: string[]
   lastActiveTime: number
+  characterStats: CharacterStats
+  trainerLastWorkout: Record<string, number>  // trainerId → timestamp ms
+  selectedProgram: string | null
+  programLastCompleted: string  // todayStr() когда была засчитана программа
 }
 
 export const MAX_DAILY_CLICKS = 100
 export const MAX_OFFLINE_SECONDS = 8 * 3600
+export const ENDURANCE_CLICKS_PER_LEVEL = 30
+
+export const PROGRAMS: Program[] = [
+  {
+    id: 'cardio',
+    name: 'Кардио',
+    emoji: '🔥',
+    desc: 'Выносливость +1 → +30 кликов/день навсегда',
+    trainerIds: ['rope', 'treadmill', 'bike'],
+    statBonus: { endurance: 1 },
+    powerBonus: 300,
+  },
+  {
+    id: 'strength',
+    name: 'День силы',
+    emoji: '💪',
+    desc: 'Сила +1 → +1 сила за клик навсегда',
+    trainerIds: ['dumbbells', 'trainer'],
+    statBonus: { strength: 1 },
+    powerBonus: 500,
+  },
+  {
+    id: 'fullbody',
+    name: 'Full Body',
+    emoji: '⚡',
+    desc: 'Сила+1, Выносливость+1 + мега-бонус',
+    trainerIds: ['rope', 'dumbbells', 'treadmill', 'bike', 'trainer', 'pool'],
+    statBonus: { strength: 1, endurance: 1 },
+    powerBonus: 2000,
+  },
+]
 
 export const DAILY_CHALLENGES: Challenge[] = [
   { id: 'water',   emoji: '💧', name: 'Выпей воду',   description: '2 стакана воды прямо сейчас', reward: 50 },
@@ -68,12 +118,12 @@ export const ACHIEVEMENTS: Achievement[] = [
 ]
 
 export const TRAINERS: Omit<Trainer, 'count'>[] = [
-  { id: 'rope',      name: 'Скакалка',           emoji: '🪢', baseCost: 100,    baseIncome: 1 },
-  { id: 'dumbbells', name: 'Гантели',             emoji: '🏋️', baseCost: 500,    baseIncome: 5 },
-  { id: 'treadmill', name: 'Беговая дорожка',     emoji: '🏃', baseCost: 2000,   baseIncome: 20 },
-  { id: 'bike',      name: 'Велотренажёр',        emoji: '🚴', baseCost: 10000,  baseIncome: 100 },
-  { id: 'trainer',   name: 'Персональный тренер', emoji: '👨‍🏫', baseCost: 50000, baseIncome: 500 },
-  { id: 'pool',      name: 'Бассейн',             emoji: '🏊', baseCost: 250000, baseIncome: 2500 },
+  { id: 'rope',      name: 'Скакалка',           emoji: '🪢', baseCost: 100,    baseIncome: 0.2 },
+  { id: 'dumbbells', name: 'Гантели',             emoji: '🏋️', baseCost: 500,    baseIncome: 1 },
+  { id: 'treadmill', name: 'Беговая дорожка',     emoji: '🏃', baseCost: 2000,   baseIncome: 4 },
+  { id: 'bike',      name: 'Велотренажёр',        emoji: '🚴', baseCost: 10000,  baseIncome: 20 },
+  { id: 'trainer',   name: 'Персональный тренер', emoji: '👨‍🏫', baseCost: 50000, baseIncome: 100 },
+  { id: 'pool',      name: 'Бассейн',             emoji: '🏊', baseCost: 250000, baseIncome: 500 },
 ]
 
 export const LEVELS = [
@@ -106,6 +156,12 @@ export function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+export function todayMidnightMs(): number {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -113,7 +169,7 @@ export function formatDuration(seconds: number): string {
   return `${m}м`
 }
 
-const SAVE_KEY = 'fitness_clicker_v3'
+const SAVE_KEY = 'fitness_clicker_v4'
 
 export function saveGame(state: GameState) {
   try {
@@ -130,6 +186,10 @@ export function saveGame(state: GameState) {
       streakFreezes: state.streakFreezes,
       achievements: state.achievements,
       lastActiveTime: Date.now(),
+      characterStats: state.characterStats,
+      trainerLastWorkout: state.trainerLastWorkout,
+      selectedProgram: state.selectedProgram,
+      programLastCompleted: state.programLastCompleted,
     }))
   } catch {}
 }

@@ -17,10 +17,11 @@ interface Props {
   comboCount: number
   dailyClicksLeft: number
   maxDailyClicks: number
+  strengthBonus: number
   onСlick: () => void
 }
 
-export function ClickButton({ level, comboMultiplier, comboCount, dailyClicksLeft, maxDailyClicks, onСlick }: Props) {
+export function ClickButton({ level, comboMultiplier, comboCount, dailyClicksLeft, maxDailyClicks, strengthBonus, onСlick }: Props) {
   const [pressed, setPressed] = useState(false)
   const [exercise, setExercise] = useState('')
   const [motivation, setMotivation] = useState('')
@@ -75,7 +76,9 @@ export function ClickButton({ level, comboMultiplier, comboCount, dailyClicksLef
             <span className="exercise-label">{exercise}</span>
           ) : (
             <span className="click-hint">
-              {isExhausted ? 'Выполни задание →' : `+${comboMultiplier} силы`}
+              {isExhausted
+                ? 'Выполни задание →'
+                : `+${comboMultiplier + strengthBonus} силы`}
             </span>
           )}
 

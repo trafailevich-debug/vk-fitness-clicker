@@ -8,9 +8,9 @@ import { TabBar } from './components/TabBar'
 import { OfflineEarnings } from './components/OfflineEarnings'
 import { AchievementToast } from './components/AchievementToast'
 import {
-  GameState, Trainer, TRAINERS, LEVELS, DAILY_CHALLENGES,
-  MAX_DAILY_CLICKS, MAX_OFFLINE_SECONDS,
-  getLevel, getTrainerCost, saveGame, loadGame, todayStr,
+  GameState, Trainer, TRAINERS, LEVELS, DAILY_CHALLENGES, PROGRAMS,
+  MAX_DAILY_CLICKS, MAX_OFFLINE_SECONDS, ENDURANCE_CLICKS_PER_LEVEL,
+  getLevel, getTrainerCost, saveGame, loadGame, todayStr, todayMidnightMs,
 } from './store/gameStore'
 import './App.css'
 
@@ -120,6 +120,10 @@ function buildInitialState(): GameState {
       : (saved?.streakFreezes ?? 0),
     achievements: saved?.achievements ?? [],
     lastActiveTime: Date.now(),
+    characterStats: (saved as any)?.characterStats ?? { strength: 0, endurance: 0 },
+    trainerLastWorkout: (saved as any)?.trainerLastWorkout ?? {},
+    selectedProgram: (saved as any)?.selectedProgram ?? null,
+    programLastCompleted: (saved as any)?.programLastCompleted ?? '',
   }
 }
 
@@ -219,6 +223,37 @@ export default function App() {
     else if (level.label === 'Любитель') unlock('level_amateur')
   }, [level.label, unlock])
 
+  const handleWorkoutComplete = useCallback((trainerId: string, reward: number) => {
+    setState(s => ({
+      ...s,
+      power: s.power + reward,
+      totalPower: s.totalPower + reward,
+      trainerLastWorkout: { ...s.trainerLastWorkout, [trainerId]: Date.now() },
+    }))
+  }, [])
+
+  const handleSelectProgram = useCallback((programId: string) => {
+    setState(s => ({ ...s, selectedProgram: programId }))
+  }, [])
+
+  const handleProgramComplete = useCallback((programId: string) => {
+    const prog = PROGRAMS.find(p => p.id === programId)
+    if (!prog) return
+    setState(s => {
+      if (s.programLastCompleted === todayStr()) return s
+      return {
+        ...s,
+        power: s.power + prog.powerBonus,
+        totalPower: s.totalPower + prog.powerBonus,
+        programLastCompleted: todayStr(),
+        characterStats: {
+          strength: s.characterStats.strength + (prog.statBonus.strength ?? 0),
+          endurance: s.characterStats.endurance + (prog.statBonus.endurance ?? 0),
+        },
+      }
+    })
+  }, [])
+
   const handleClick = useCallback(() => {
     comboCountRef.current += 1
     const c = comboCountRef.current
@@ -227,11 +262,12 @@ export default function App() {
 
     setState(s => {
       if (s.dailyClicksLeft <= 0) return s
+      const clickPower = multiplier + s.characterStats.strength
       const newClicks = s.totalClicks + 1
       return {
         ...s,
-        power: s.power + multiplier,
-        totalPower: s.totalPower + multiplier,
+        power: s.power + clickPower,
+        totalPower: s.totalPower + clickPower,
         totalClicks: newClicks,
         dailyClicksLeft: s.dailyClicksLeft - 1,
       }
@@ -301,6 +337,17 @@ export default function App() {
     ? Math.min(100, ((state.totalPower - level.min) / (nextLevel.min - level.min)) * 100)
     : 100
   const comboMultiplier = comboCount >= 10 ? 3 : comboCount >= 5 ? 2 : 1
+  const effectiveMaxClicks = MAX_DAILY_CLICKS + state.characterStats.endurance * ENDURANCE_CLICKS_PER_LEVEL
+
+  // Program completion check
+  const selectedProg = PROGRAMS.find(p => p.id === state.selectedProgram)
+  const todayMidnight = todayMidnightMs()
+  const programDone = selectedProg
+    ? selectedProg.trainerIds
+        .filter(id => state.trainers.find(t => t.id === id && t.count > 0))
+        .every(id => (state.trainerLastWorkout[id] ?? 0) > todayMidnight)
+    : false
+  const programAlreadyClaimed = state.programLastCompleted === todayStr()
 
   return (
     <div className="app">
@@ -343,7 +390,8 @@ export default function App() {
             comboMultiplier={comboMultiplier}
             comboCount={comboCount}
             dailyClicksLeft={state.dailyClicksLeft}
-            maxDailyClicks={MAX_DAILY_CLICKS}
+            maxDailyClicks={effectiveMaxClicks}
+            strengthBonus={state.characterStats.strength}
             onСlick={handleClick}
           />
         )}
@@ -359,7 +407,15 @@ export default function App() {
           <TrainersList
             trainers={state.trainers}
             power={state.power}
+            characterStats={state.characterStats}
+            trainerLastWorkout={state.trainerLastWorkout}
+            selectedProgram={state.selectedProgram}
+            programDone={programDone}
+            programAlreadyClaimed={programAlreadyClaimed}
             onBuy={handleBuy}
+            onWorkoutComplete={handleWorkoutComplete}
+            onSelectProgram={handleSelectProgram}
+            onProgramComplete={handleProgramComplete}
           />
         )}
       </div>
