@@ -1,90 +1,91 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Trainer, CharacterStats, PROGRAMS, getTrainerCost, formatNumber } from '../store/gameStore'
 import './TrainersList.css'
 
-// ── Workout definitions ──────────────────────────────────────────────────────
-
 type WorkoutType = 'tap' | 'hold'
-
 interface TrainerWorkout {
-  type: WorkoutType
-  label: string
-  target?: number     // tap: сколько нажатий
-  timeLimit?: number  // tap: секунд на всё
-  duration?: number   // hold: держать N секунд
-  reward: number
+  type: WorkoutType; label: string
+  target?: number; timeLimit?: number; duration?: number; reward: number
 }
 
 const TRAINER_WORKOUTS: Record<string, TrainerWorkout> = {
-  rope:      { type: 'tap',  label: 'Прыжки со скакалкой', target: 15, timeLimit: 12, reward: 80  },
-  dumbbells: { type: 'hold', label: 'Жим гантелей',         duration: 4,               reward: 150 },
-  treadmill: { type: 'tap',  label: 'Пробежка',             target: 25, timeLimit: 18, reward: 120 },
-  bike:      { type: 'tap',  label: 'Велотренировка',       target: 20, timeLimit: 15, reward: 100 },
-  trainer:   { type: 'tap',  label: 'Тренировка с тренером',target: 30, timeLimit: 20, reward: 300 },
-  pool:      { type: 'hold', label: 'Заплыв в бассейне',    duration: 6,               reward: 500 },
+  rope:      { type: 'tap',  label: 'Прыжки', target: 15, timeLimit: 12, reward: 80  },
+  dumbbells: { type: 'hold', label: 'Жим',    duration: 4,               reward: 150 },
+  treadmill: { type: 'tap',  label: 'Бег',    target: 25, timeLimit: 18, reward: 120 },
+  bike:      { type: 'tap',  label: 'Кардио', target: 20, timeLimit: 15, reward: 100 },
+  trainer:   { type: 'tap',  label: 'Комплекс', target: 30, timeLimit: 20, reward: 300 },
+  pool:      { type: 'hold', label: 'Заплыв', duration: 6,               reward: 500 },
 }
 
-// ── Mini-game: Tap challenge ─────────────────────────────────────────────────
-
+// ── Tap mini-game ─────────────────────────────────────────────────────────────
 function TapWorkout({ target, timeLimit, reward, onDone }: {
-  target: number; timeLimit: number; reward: number
-  onDone: (success: boolean) => void
+  target: number; timeLimit: number; reward: number; onDone: (ok: boolean) => void
 }) {
   const [count, setCount] = useState(0)
   const [timeLeft, setTimeLeft] = useState(timeLimit)
   const finished = useRef(false)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    if (count >= target) {
-      if (!finished.current) { finished.current = true; onDone(true) }
-      return
-    }
-    if (timeLeft <= 0) {
-      if (!finished.current) { finished.current = true; onDone(false) }
-      return
-    }
-    const t = setInterval(() => setTimeLeft(s => s - 1), 1000)
-    return () => clearInterval(t)
-  }, [timeLeft, count, target, onDone])
+  // start timer once on mount
+  useRef((() => {
+    timerRef.current = setInterval(() => {
+      setTimeLeft(s => {
+        if (s <= 1) {
+          clearInterval(timerRef.current!)
+          if (!finished.current) { finished.current = true; onDone(false) }
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(timerRef.current!)
+  })())
 
-  const pct = (count / target) * 100
-  const timePct = (timeLeft / timeLimit) * 100
+  const tap = useCallback(() => {
+    if (finished.current) return
+    setCount(c => {
+      const next = c + 1
+      if (next >= target) {
+        clearInterval(timerRef.current!)
+        if (!finished.current) { finished.current = true; onDone(true) }
+      }
+      return next
+    })
+  }, [target, onDone])
 
   return (
-    <div className="minigame tap-game">
-      <div className="mg-stats">
-        <span className="mg-count">{count}<span className="mg-total">/{target}</span></span>
-        <span className={`mg-timer ${timeLeft <= 3 ? 'danger' : ''}`}>{timeLeft}с</span>
+    <div className="minigame">
+      <div className="mg-row">
+        <div className="mg-bars">
+          <div className="mg-bar"><div className="mg-fill taps" style={{ width: `${(count / target) * 100}%` }} /></div>
+          <div className="mg-bar"><div className="mg-fill time" style={{ width: `${(timeLeft / timeLimit) * 100}%` }} /></div>
+        </div>
+        <div className="mg-info">
+          <span className="mg-count">{count}<em>/{target}</em></span>
+          <span className={`mg-timer ${timeLeft <= 3 ? 'red' : ''}`}>{timeLeft}с</span>
+        </div>
       </div>
-      <div className="mg-bar-row">
-        <div className="mg-bar"><div className="mg-bar-fill taps" style={{ width: `${pct}%` }} /></div>
-        <div className="mg-bar"><div className="mg-bar-fill time" style={{ width: `${timePct}%` }} /></div>
-      </div>
-      <button className="mg-tap-btn" onPointerDown={() => setCount(c => c + 1)}>
-        👊 ТАП!
-      </button>
-      <div className="mg-reward-hint">+{reward} 💪 за выполнение</div>
+      <button className="mg-tap-btn" onPointerDown={tap}>👊 ТАП! <span className="mg-reward">+{reward}💪</span></button>
     </div>
   )
 }
 
-// ── Mini-game: Hold challenge ────────────────────────────────────────────────
-
+// ── Hold mini-game ────────────────────────────────────────────────────────────
 function HoldWorkout({ duration, reward, onDone }: {
-  duration: number; reward: number; onDone: (success: boolean) => void
+  duration: number; reward: number; onDone: (ok: boolean) => void
 }) {
   const [progress, setProgress] = useState(0)
   const [holding, setHolding] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const ivRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const finished = useRef(false)
 
   const startHold = useCallback(() => {
     setHolding(true)
-    intervalRef.current = setInterval(() => {
+    ivRef.current = setInterval(() => {
       setProgress(p => {
         const next = p + 100 / (duration * 10)
         if (next >= 100) {
-          clearInterval(intervalRef.current!)
+          clearInterval(ivRef.current!)
           if (!finished.current) { finished.current = true; onDone(true) }
           return 100
         }
@@ -95,121 +96,82 @@ function HoldWorkout({ duration, reward, onDone }: {
 
   const endHold = useCallback(() => {
     setHolding(false)
-    if (intervalRef.current) clearInterval(intervalRef.current)
+    if (ivRef.current) clearInterval(ivRef.current)
     if (!finished.current) setProgress(0)
   }, [])
 
+  const circ = 213.6
   return (
     <div className="minigame hold-game">
-      <div className="hold-ring-wrap">
-        <svg className="hold-ring" viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="34" className="hold-ring-bg" />
-          <circle
-            cx="40" cy="40" r="34"
-            className="hold-ring-fill"
-            style={{ strokeDashoffset: 213.6 - (213.6 * progress) / 100 }}
-          />
+      <div className="hold-wrap">
+        <svg className="hold-svg" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="30" className="hold-bg" />
+          <circle cx="36" cy="36" r="30" className="hold-fg"
+            style={{ strokeDashoffset: circ - (circ * progress) / 100 }} />
         </svg>
-        <span className="hold-ring-label">{Math.round(progress)}%</span>
+        <span className="hold-pct">{Math.round(progress)}%</span>
       </div>
       <button
-        className={`mg-hold-btn ${holding ? 'holding' : ''}`}
-        onPointerDown={startHold}
-        onPointerUp={endHold}
-        onPointerLeave={endHold}
+        className={`mg-hold-btn ${holding ? 'on' : ''}`}
+        onPointerDown={startHold} onPointerUp={endHold} onPointerLeave={endHold}
       >
-        {holding ? '🔥 Держи!' : '✊ Удержи'}
+        {holding ? '🔥 Держи!' : '✊ Удержи'} <span className="mg-reward">+{reward}💪</span>
       </button>
-      <div className="mg-reward-hint">Держи {duration}с → +{reward} 💪</div>
     </div>
   )
 }
 
-// ── Trainer row with inline mini-workout ─────────────────────────────────────
-
-function TrainerRow({ trainer, workedOutToday, isActiveWorkout, onStartWorkout, onWorkoutComplete }: {
-  trainer: Trainer
-  workedOutToday: boolean
-  isActiveWorkout: boolean
-  onStartWorkout: () => void
-  onWorkoutComplete: (reward: number) => void
+// ── Trainer row ───────────────────────────────────────────────────────────────
+function TrainerRow({ trainer, workedOutToday, isActive, onToggle, onComplete }: {
+  trainer: Trainer; workedOutToday: boolean; isActive: boolean
+  onToggle: () => void; onComplete: (reward: number) => void
 }) {
-  const [result, setResult] = useState<'success' | 'fail' | null>(null)
-  const workout = TRAINER_WORKOUTS[trainer.id]
+  const [result, setResult] = useState<'ok' | 'fail' | null>(null)
+  const w = TRAINER_WORKOUTS[trainer.id]
 
-  const handleDone = useCallback((success: boolean) => {
-    setResult(success ? 'success' : 'fail')
-    if (success) onWorkoutComplete(workout.reward)
-    setTimeout(() => setResult(null), 2200)
-  }, [onWorkoutComplete, workout.reward])
+  const handleDone = useCallback((ok: boolean) => {
+    setResult(ok ? 'ok' : 'fail')
+    if (ok) onComplete(w.reward)
+    setTimeout(() => setResult(null), 1800)
+  }, [onComplete, w])
+
+  const desc = workedOutToday ? '✅ Выполнено' :
+    w.type === 'tap' ? `👊 ${w.target} раз за ${w.timeLimit}с` : `✊ Держи ${w.duration}с`
 
   return (
-    <div className={`trainer-row ${isActiveWorkout ? 'active-workout' : ''} ${workedOutToday ? 'done-today' : ''}`}>
-      <div className="trainer-row-main">
-        <div className="trainer-emoji">{trainer.emoji}</div>
-        <div className="trainer-info">
-          <div className="trainer-name">{trainer.name}</div>
-          <div className="trainer-desc">
-            {workedOutToday
-              ? '✅ Тренировка выполнена сегодня'
-              : workout
-                ? workout.type === 'tap'
-                  ? `👊 ${workout.target} нажатий за ${workout.timeLimit}с`
-                  : `✊ Удержи ${workout.duration}с`
-                : `+${formatNumber(trainer.baseIncome)}/сек`}
-          </div>
+    <div className={`t-row ${isActive ? 'active' : ''} ${workedOutToday ? 'done' : ''}`}>
+      <div className="t-main">
+        <span className="t-emoji">{trainer.emoji}</span>
+        <div className="t-info">
+          <span className="t-name">{trainer.name}</span>
+          <span className="t-desc">{desc}</span>
         </div>
-        <div className="trainer-right">
-          {workedOutToday ? (
-            <div className="trainer-done-badge">✓ Готово</div>
-          ) : result === 'success' ? (
-            <div className="trainer-result success">+{workout.reward} 💪</div>
-          ) : result === 'fail' ? (
-            <div className="trainer-result fail">Не успел 😅</div>
-          ) : isActiveWorkout ? (
-            <div className="trainer-active-label">Тренируется…</div>
-          ) : (
-            <button className="trainer-workout-btn" onClick={onStartWorkout}>
-              Начать
-            </button>
-          )}
+        <div className="t-action">
+          {workedOutToday    ? <span className="t-badge done">✓</span>
+          : result === 'ok'  ? <span className="t-badge ok">+{w.reward}💪</span>
+          : result === 'fail'? <span className="t-badge fail">😅</span>
+          : isActive         ? <span className="t-badge running">…</span>
+          :                    <button className="t-btn" onClick={onToggle}>Начать</button>}
         </div>
       </div>
-
-      {isActiveWorkout && !result && workout && (
-        workout.type === 'tap' ? (
-          <TapWorkout
-            target={workout.target!}
-            timeLimit={workout.timeLimit!}
-            reward={workout.reward}
-            onDone={handleDone}
-          />
-        ) : (
-          <HoldWorkout
-            duration={workout.duration!}
-            reward={workout.reward}
-            onDone={handleDone}
-          />
-        )
+      {isActive && !result && (
+        w.type === 'tap'
+          ? <TapWorkout target={w.target!} timeLimit={w.timeLimit!} reward={w.reward} onDone={handleDone} />
+          : <HoldWorkout duration={w.duration!} reward={w.reward} onDone={handleDone} />
       )}
     </div>
   )
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
+// ── Main ──────────────────────────────────────────────────────────────────────
 interface Props {
-  trainers: Trainer[]
-  power: number
-  characterStats: CharacterStats
+  trainers: Trainer[]; power: number; characterStats: CharacterStats
   trainerLastWorkout: Record<string, number>
-  selectedProgram: string | null
-  programDone: boolean
-  programAlreadyClaimed: boolean
+  selectedProgram: string | null; programDone: boolean; programAlreadyClaimed: boolean
   onBuy: (id: string) => void
   onWorkoutComplete: (trainerId: string, reward: number) => void
-  onSelectProgram: (programId: string) => void
-  onProgramComplete: (programId: string) => void
+  onSelectProgram: (id: string) => void
+  onProgramComplete: (id: string) => void
 }
 
 export function TrainersList({
@@ -217,147 +179,125 @@ export function TrainersList({
   selectedProgram, programDone, programAlreadyClaimed,
   onBuy, onWorkoutComplete, onSelectProgram, onProgramComplete,
 }: Props) {
-  const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const midnight = new Date().setHours(0, 0, 0, 0)
+  const doneToday = (id: string) => (trainerLastWorkout[id] ?? 0) > midnight
 
-  const todayMidnight = new Date().setHours(0, 0, 0, 0)
-  const isWorkedOutToday = (id: string) => (trainerLastWorkout[id] ?? 0) > todayMidnight
+  const owned  = trainers.filter(t => t.count > 0)
+  const locked = trainers.filter(t => t.count === 0)
 
-  const ownedTrainers = trainers.filter(t => t.count > 0)
-  const lockedTrainers = trainers.filter(t => t.count === 0)
+  const selProg = PROGRAMS.find(p => p.id === selectedProgram)
+  const progOwned = selProg ? selProg.trainerIds.filter(id => trainers.find(t => t.id === id && t.count > 0)) : []
+  const progDoneN = progOwned.filter(id => doneToday(id)).length
 
-  const selectedProg = PROGRAMS.find(p => p.id === selectedProgram)
-  const progOwnedIds = selectedProg
-    ? selectedProg.trainerIds.filter(id => trainers.find(t => t.id === id && t.count > 0))
-    : []
-  const progDoneCount = progOwnedIds.filter(id => isWorkedOutToday(id)).length
-
-  const handleWorkoutComplete = useCallback((trainerId: string, reward: number) => {
-    setActiveWorkoutId(null)
-    onWorkoutComplete(trainerId, reward)
+  const handleComplete = useCallback((id: string, reward: number) => {
+    setActiveId(null)
+    onWorkoutComplete(id, reward)
   }, [onWorkoutComplete])
 
   return (
-    <div className="trainers-wrap">
+    <div className="tl-wrap">
 
-      {/* ── Character stats ── */}
-      <div className="char-stats">
-        <div className="char-stat">
-          <span className="char-stat-icon">💪</span>
-          <div className="char-stat-info">
-            <span className="char-stat-label">Сила</span>
-            <span className="char-stat-value">+{characterStats.strength} за клик</span>
+      {/* ── Stats + Programs (single card) ── */}
+      <div className="prog-card">
+        {/* Stat chips */}
+        <div className="stat-chips">
+          <div className="stat-chip">
+            <span>💪</span>
+            <div className="chip-text">
+              <span className="chip-name">Сила</span>
+              <span className="chip-val">+{characterStats.strength}/клик</span>
+            </div>
+            <span className="chip-lv">Ур.{characterStats.strength}</span>
           </div>
-          <span className="char-stat-level">Ур.{characterStats.strength}</span>
-        </div>
-        <div className="char-stat-divider" />
-        <div className="char-stat">
-          <span className="char-stat-icon">🏃</span>
-          <div className="char-stat-info">
-            <span className="char-stat-label">Выносливость</span>
-            <span className="char-stat-value">+{characterStats.endurance * 30} кликов/день</span>
+          <div className="stat-chip-sep" />
+          <div className="stat-chip">
+            <span>🏃</span>
+            <div className="chip-text">
+              <span className="chip-name">Выносл.</span>
+              <span className="chip-val">+{characterStats.endurance * 30}/день</span>
+            </div>
+            <span className="chip-lv">Ур.{characterStats.endurance}</span>
           </div>
-          <span className="char-stat-level">Ур.{characterStats.endurance}</span>
         </div>
-      </div>
 
-      {/* ── Programs ── */}
-      <div className="programs-section">
-        <div className="section-title">Программа дня</div>
-        <div className="programs-row">
+        <div className="prog-divider" />
+
+        {/* Program tabs */}
+        <div className="prog-tabs">
           {PROGRAMS.map(prog => {
-            const ownedNeeded = prog.trainerIds.filter(id => trainers.find(t => t.id === id && t.count > 0))
-            const isUnlocked = ownedNeeded.length > 0
-            const isSelected = selectedProgram === prog.id
+            const unlocked = prog.trainerIds.some(id => trainers.find(t => t.id === id && t.count > 0))
+            const sel = selectedProgram === prog.id
             return (
               <button
                 key={prog.id}
-                className={`program-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}`}
-                onClick={() => isUnlocked && onSelectProgram(prog.id)}
-                disabled={!isUnlocked}
+                className={`prog-tab ${sel ? 'sel' : ''} ${!unlocked ? 'locked' : ''}`}
+                onClick={() => unlocked && onSelectProgram(prog.id)}
+                disabled={!unlocked}
               >
-                <span className="prog-emoji">{prog.emoji}</span>
-                <span className="prog-name">{prog.name}</span>
-                <span className="prog-bonus">
-                  {Object.entries(prog.statBonus).map(([k, v]) =>
-                    k === 'strength' ? `💪+${v}` : `🏃+${v}`
-                  ).join(' ')}
-                </span>
-                {!isUnlocked && <span className="prog-lock">🔒</span>}
+                {prog.emoji} {prog.name}{!unlocked ? ' 🔒' : ''}
               </button>
             )
           })}
         </div>
 
-        {selectedProg && (
-          <div className="program-progress-bar-wrap">
-            <div className="program-progress-info">
-              <span>{selectedProg.emoji} {selectedProg.name}</span>
-              <span className="prog-count">{progDoneCount}/{progOwnedIds.length}</span>
+        {/* Program progress */}
+        {selProg && (
+          <div className="prog-progress">
+            <div className="prog-prog-row">
+              <span className="prog-desc">{selProg.desc}</span>
+              <span className="prog-frac">{progDoneN}/{progOwned.length}</span>
             </div>
-            <div className="program-progress-bar">
-              <div
-                className="program-progress-fill"
-                style={{ width: `${progOwnedIds.length ? (progDoneCount / progOwnedIds.length) * 100 : 0}%` }}
-              />
-            </div>
-            <div className="prog-desc">{selectedProg.desc}</div>
+            <div className="prog-bar"><div className="prog-bar-fill" style={{
+              width: `${progOwned.length ? (progDoneN / progOwned.length) * 100 : 0}%`
+            }} /></div>
             {programDone && !programAlreadyClaimed && (
-              <button className="prog-claim-btn" onClick={() => onProgramComplete(selectedProg.id)}>
-                🎉 Забрать награду +{selectedProg.powerBonus} 💪
+              <button className="prog-claim" onClick={() => onProgramComplete(selProg.id)}>
+                🎉 Забрать +{selProg.powerBonus} 💪
               </button>
             )}
-            {programAlreadyClaimed && (
-              <div className="prog-claimed">✅ Программа выполнена сегодня!</div>
-            )}
+            {programAlreadyClaimed && <div className="prog-done">✅ Программа выполнена!</div>}
           </div>
         )}
       </div>
 
-      {/* ── Owned trainers with workouts ── */}
-      {ownedTrainers.length > 0 && (
-        <div className="trainers-section">
-          <div className="section-title">Мои тренажёры</div>
-          {ownedTrainers.map(t => (
-            <TrainerRow
-              key={t.id}
-              trainer={t}
-              workedOutToday={isWorkedOutToday(t.id)}
-              isActiveWorkout={activeWorkoutId === t.id}
-              onStartWorkout={() => setActiveWorkoutId(activeWorkoutId === t.id ? null : t.id)}
-              onWorkoutComplete={(reward) => handleWorkoutComplete(t.id, reward)}
+      {/* ── Owned trainers ── */}
+      {owned.length > 0 && (
+        <div className="t-section">
+          <div className="t-section-title">Мои тренажёры</div>
+          {owned.map(t => (
+            <TrainerRow key={t.id} trainer={t}
+              workedOutToday={doneToday(t.id)}
+              isActive={activeId === t.id}
+              onToggle={() => setActiveId(activeId === t.id ? null : t.id)}
+              onComplete={(r) => handleComplete(t.id, r)}
             />
           ))}
         </div>
       )}
 
-      {/* ── Buy locked trainers ── */}
-      {lockedTrainers.length > 0 && (
-        <div className="trainers-section">
-          <div className="section-title">Купить тренажёры</div>
-          {lockedTrainers.map(t => {
+      {/* ── Buy trainers ── */}
+      {locked.length > 0 && (
+        <div className="t-section">
+          <div className="t-section-title">Купить тренажёры</div>
+          {locked.map(t => {
             const cost = getTrainerCost(t, t.count)
-            const canAfford = power >= cost
-            const workout = TRAINER_WORKOUTS[t.id]
+            const can = power >= cost
+            const w = TRAINER_WORKOUTS[t.id]
             return (
-              <div key={t.id} className={`trainer-row buy-row ${canAfford ? 'affordable' : ''}`}>
-                <div className="trainer-emoji">{t.emoji}</div>
-                <div className="trainer-info">
-                  <div className="trainer-name">{t.name}</div>
-                  <div className="trainer-desc">
-                    {workout
-                      ? workout.type === 'tap'
-                        ? `👊 ${workout.target} нажатий за ${workout.timeLimit}с → +${workout.reward} 💪`
-                        : `✊ Держи ${workout.duration}с → +${workout.reward} 💪`
-                      : ''}
-                  </div>
+              <div key={t.id} className={`t-row buy-row ${can ? 'can' : ''}`}>
+                <span className="t-emoji">{t.emoji}</span>
+                <div className="t-info">
+                  <span className="t-name">{t.name}</span>
+                  <span className="t-desc">
+                    {w.type === 'tap'
+                      ? `👊 ${w.target}×  → +${w.reward}💪`
+                      : `✊ ${w.duration}с → +${w.reward}💪`}
+                  </span>
                 </div>
-                <button
-                  className="trainer-buy-btn"
-                  disabled={!canAfford}
-                  onClick={() => onBuy(t.id)}
-                >
+                <button className="buy-btn" disabled={!can} onClick={() => onBuy(t.id)}>
                   <span className="buy-cost">💪 {formatNumber(cost)}</span>
-                  <span className="buy-label">Купить</span>
+                  <span className="buy-lbl">Купить</span>
                 </button>
               </div>
             )
