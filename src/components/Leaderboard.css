@@ -1,0 +1,216 @@
+.leaderboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Header ── */
+.lb-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top-color: rgba(255,255,255,0.22);
+  border-radius: 22px;
+  padding: 18px 20px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 8px 32px rgba(0,0,0,0.28);
+}
+
+.lb-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.lb-subtitle {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 2px;
+}
+
+.lb-your-rank {
+  text-align: right;
+}
+
+.lb-rank-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.40);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lb-rank-num {
+  font-size: 24px;
+  font-weight: 900;
+  color: #60a5fa;
+  letter-spacing: -0.5px;
+}
+
+/* ── Player outside top 20 ── */
+.lb-player-own {
+  background: linear-gradient(135deg, rgba(96,165,250,0.12), rgba(96,165,250,0.05));
+  border: 1px solid rgba(96,165,250,0.28);
+  border-top-color: rgba(147,197,253,0.40);
+  border-radius: 18px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: inset 0 1px 0 rgba(147,197,253,0.16), 0 4px 20px rgba(96,165,250,0.10);
+}
+
+.lb-rank-outside {
+  font-size: 14px;
+  font-weight: 800;
+  color: #60a5fa;
+  min-width: 34px;
+  text-align: center;
+}
+
+/* ── List container ── */
+.lb-list {
+  background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03));
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-top-color: rgba(255,255,255,0.18);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 8px 32px rgba(0,0,0,0.24);
+}
+
+/* ── Row ── */
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.2s;
+}
+
+.lb-row:last-child {
+  border-bottom: none;
+}
+
+.lb-row.top3 {
+  background: linear-gradient(135deg, rgba(251,191,36,0.06), transparent);
+}
+
+.lb-row.is-player {
+  background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(96,165,250,0.04));
+  border-left: 2px solid rgba(96,165,250,0.45);
+}
+
+/* ── Rank cell ── */
+.lb-rank-cell {
+  min-width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.lb-rank-num-sm {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+}
+
+.rank-top3 .lb-rank-num-sm {
+  color: rgba(255,255,255,0.7);
+}
+
+.lb-medal {
+  font-size: 20px;
+}
+
+/* ── Avatar ── */
+.lb-avatar {
+  font-size: 22px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lb-avatar-you {
+  background: rgba(96,165,250,0.12);
+  border-color: rgba(96,165,250,0.28);
+}
+
+.avatar-top3 {
+  background: rgba(251,191,36,0.10);
+  border-color: rgba(251,191,36,0.25);
+}
+
+/* ── Info ── */
+.lb-player-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lb-player-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-you-tag {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(96,165,250,0.18);
+  border: 1px solid rgba(96,165,250,0.32);
+  color: #93c5fd;
+  padding: 2px 7px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.lb-player-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.38);
+  margin-top: 2px;
+}
+
+/* ── Power ── */
+.lb-player-power {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.70);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-top3 {
+  color: #FCD34D;
+}
+
+/* ── Motivation footer ── */
+.lb-motivation {
+  background: linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.03));
+  border: 1px solid rgba(52,211,153,0.18);
+  border-radius: 16px;
+  padding: 13px 16px;
+}
+
+.lb-mot-text {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  font-weight: 500;
+  line-height: 1.4;
+}

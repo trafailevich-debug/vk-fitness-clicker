@@ -12,6 +12,9 @@ export interface Challenge {
   emoji: string
   name: string
   description: string
+  howTo: string[]
+  healthBenefit: string
+  category: 'mobility' | 'strength' | 'cardio' | 'hydration' | 'recovery'
   reward: number
 }
 
@@ -23,8 +26,8 @@ export interface Achievement {
 }
 
 export interface CharacterStats {
-  strength: number   // +N силы за клик
-  endurance: number  // +30 дневных кликов за уровень
+  strength: number
+  endurance: number
 }
 
 export interface Program {
@@ -35,6 +38,28 @@ export interface Program {
   trainerIds: string[]
   statBonus: Partial<CharacterStats>
   powerBonus: number
+}
+
+export interface VipWorkout {
+  id: string
+  name: string
+  emoji: string
+  description: string
+  howTo: string[]
+  healthBenefit: string
+  type: 'tap' | 'hold'
+  target?: number
+  timeLimit?: number
+  duration?: number
+  reward: number
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  name: string
+  avatar: string
+  totalPower: number
+  streak: number
 }
 
 export interface GameState {
@@ -53,20 +78,114 @@ export interface GameState {
   achievements: string[]
   lastActiveTime: number
   characterStats: CharacterStats
-  trainerLastWorkout: Record<string, number>  // trainerId → timestamp ms
+  trainerLastWorkout: Record<string, number>
   selectedProgram: string | null
-  programLastCompleted: string  // todayStr() когда была засчитана программа
+  programLastCompleted: string
+  completedVipWorkouts: string[]
+  dailyAllDoneDate: string
 }
 
 export const MAX_DAILY_CLICKS = 100
 export const MAX_OFFLINE_SECONDS = 8 * 3600
 export const ENDURANCE_CLICKS_PER_LEVEL = 30
 
+export const VIP_WORKOUTS: VipWorkout[] = [
+  {
+    id: 'yoga_flow',
+    name: 'Йога-поток',
+    emoji: '🧘‍♀️',
+    description: 'Медитативный поток поз для тела и разума',
+    howTo: [
+      'Встань прямо, ноги на ширине плеч',
+      'Поднимай руки вверх на вдохе, опускай на выдохе',
+      'Переходи между позами плавно, без рывков',
+      'Дыши глубоко и ровно всё время',
+    ],
+    healthBenefit: 'Снижает кортизол на 20%, улучшает гибкость позвоночника и успокаивает нервную систему',
+    type: 'hold',
+    duration: 8,
+    reward: 600,
+  },
+  {
+    id: 'sprint_series',
+    name: 'Спринт-серия',
+    emoji: '⚡',
+    description: 'Взрывная HIIT-тренировка для максимального жиросжигания',
+    howTo: [
+      'Разомнись 30 секунд на месте',
+      'Бег на месте с максимальной скоростью 10 секунд',
+      'Отдых 20 секунд — ходьба',
+      'Повтори цикл 5–8 раз',
+    ],
+    healthBenefit: 'HIIT ускоряет метаболизм на 24 часа, сжигает жир в 3× эффективнее обычного кардио',
+    type: 'tap',
+    target: 40,
+    timeLimit: 25,
+    reward: 800,
+  },
+  {
+    id: 'plank_challenge',
+    name: 'Планка-вызов',
+    emoji: '🏆',
+    description: 'Удержи идеальную планку до победного конца',
+    howTo: [
+      'Прими упор лёжа на предплечьях',
+      'Тело — прямая линия от головы до пяток',
+      'Напряги пресс и ягодицы',
+      'Держи взгляд в пол, дыши ровно',
+    ],
+    healthBenefit: 'Укрепляет кор и стабилизаторы позвоночника — профилактика боли в спине',
+    type: 'hold',
+    duration: 10,
+    reward: 1000,
+  },
+  {
+    id: 'power_yoga',
+    name: 'Силовая йога',
+    emoji: '🌟',
+    description: 'Интенсивная последовательность для силы и баланса',
+    howTo: [
+      'Воин I: выпад вперёд, руки вверх — 30 секунд',
+      'Воин II: руки в стороны, взгляд вперёд — 30 секунд',
+      'Планка → Чатуранга → Собака мордой вниз',
+      'Повтори последовательность 3 раза',
+    ],
+    healthBenefit: 'Строит мышечную выносливость, улучшает баланс, координацию и осознанность тела',
+    type: 'tap',
+    target: 20,
+    timeLimit: 20,
+    reward: 700,
+  },
+]
+
+export const LEADERBOARD_MOCK: LeaderboardEntry[] = [
+  { rank: 1,  name: 'Александра К.',  avatar: '👑', totalPower: 5420000, streak: 45 },
+  { rank: 2,  name: 'Дмитрий В.',     avatar: '🥈', totalPower: 4180000, streak: 38 },
+  { rank: 3,  name: 'Мария С.',       avatar: '🥉', totalPower: 3950000, streak: 52 },
+  { rank: 4,  name: 'Иван П.',        avatar: '⭐', totalPower: 2870000, streak: 29 },
+  { rank: 5,  name: 'Наталья Ш.',     avatar: '⭐', totalPower: 2340000, streak: 21 },
+  { rank: 6,  name: 'Андрей Т.',      avatar: '⭐', totalPower: 1980000, streak: 18 },
+  { rank: 7,  name: 'Олеся М.',       avatar: '⭐', totalPower: 1650000, streak: 15 },
+  { rank: 8,  name: 'Кирилл Б.',      avatar: '⭐', totalPower: 1420000, streak: 12 },
+  { rank: 9,  name: 'Светлана Ж.',    avatar: '⭐', totalPower: 1190000, streak: 11 },
+  { rank: 10, name: 'Роман Н.',       avatar: '⭐', totalPower: 980000,  streak: 9  },
+  { rank: 11, name: 'Виктория Л.',    avatar: '⭐', totalPower: 820000,  streak: 8  },
+  { rank: 12, name: 'Евгений К.',     avatar: '⭐', totalPower: 690000,  streak: 7  },
+  { rank: 13, name: 'Юлия А.',        avatar: '⭐', totalPower: 580000,  streak: 6  },
+  { rank: 14, name: 'Алексей С.',     avatar: '⭐', totalPower: 470000,  streak: 5  },
+  { rank: 15, name: 'Татьяна В.',     avatar: '⭐', totalPower: 380000,  streak: 5  },
+  { rank: 16, name: 'Сергей П.',      avatar: '⭐', totalPower: 290000,  streak: 4  },
+  { rank: 17, name: 'Анастасия Г.',   avatar: '⭐', totalPower: 210000,  streak: 3  },
+  { rank: 18, name: 'Михаил Ф.',      avatar: '⭐', totalPower: 150000,  streak: 3  },
+  { rank: 19, name: 'Ирина Д.',       avatar: '⭐', totalPower: 95000,   streak: 2  },
+  { rank: 20, name: 'Павел З.',       avatar: '⭐', totalPower: 52000,   streak: 1  },
+]
+
 export const PROGRAMS: Program[] = [
   {
     id: 'cardio',
     name: 'Кардио',
-    emoji: '🔥',
+    emoji: '❤️',
     desc: 'Выносливость +1 → +30 кликов/день навсегда',
     trainerIds: ['rope', 'treadmill', 'bike'],
     statBonus: { endurance: 1 },
@@ -93,21 +212,133 @@ export const PROGRAMS: Program[] = [
 ]
 
 export const DAILY_CHALLENGES: Challenge[] = [
-  { id: 'water',   emoji: '💧', name: 'Выпей воду',   description: '2 стакана воды прямо сейчас', reward: 50 },
-  { id: 'stretch', emoji: '🧘', name: 'Потянись',      description: 'Растяжка 3 минуты',           reward: 75 },
-  { id: 'squat',   emoji: '🦵', name: 'Приседания',    description: '15 приседаний',               reward: 150 },
-  { id: 'pushup',  emoji: '💪', name: 'Отжимания',     description: '10 отжиманий от пола',        reward: 200 },
-  { id: 'walk',    emoji: '🚶', name: 'Прогулка',      description: 'Пройди 1000 шагов на улице',  reward: 300 },
+  {
+    id: 'water',
+    emoji: '💧',
+    name: 'Выпей воду',
+    description: '2 стакана воды прямо сейчас',
+    howTo: [
+      'Налей 2 стакана чистой воды',
+      'Выпивай медленно, небольшими глотками',
+      'Не торопись — дай телу усвоить',
+    ],
+    healthBenefit: 'Запускает метаболизм, улучшает кожу и очищает организм от токсинов',
+    category: 'hydration',
+    reward: 50,
+  },
+  {
+    id: 'headrotate',
+    emoji: '🔄',
+    name: 'Покрути головой',
+    description: '10 вращений в каждую сторону',
+    howTo: [
+      'Встань прямо, расслабь плечи',
+      'Медленно поверни голову вправо — максимально',
+      'Затем влево. Повтори 10 раз в каждую сторону',
+    ],
+    healthBenefit: 'Снимает напряжение шеи, улучшает кровообращение мозга и уменьшает головную боль',
+    category: 'mobility',
+    reward: 75,
+  },
+  {
+    id: 'steps100',
+    emoji: '👟',
+    name: 'Пройди 100 шагов',
+    description: 'Встань и пройди 100 шагов',
+    howTo: [
+      'Встань с кресла или дивана',
+      'Пройдись по комнате или по коридору',
+      'Считай каждый шаг до 100',
+    ],
+    healthBenefit: 'Движение каждые 30 минут снижает риск диабета и улучшает циркуляцию крови',
+    category: 'cardio',
+    reward: 100,
+  },
+  {
+    id: 'stretch',
+    emoji: '🧘',
+    name: 'Потянись',
+    description: 'Растяжка 3 минуты',
+    howTo: [
+      'Потяни руки вверх — задержи 15 секунд',
+      'Наклонись вперёд, дотянись до ног — задержи 20с',
+      'Скрути торс в стороны — по 15с каждую',
+    ],
+    healthBenefit: 'Уменьшает боли в спине, повышает гибкость и снижает риск травм',
+    category: 'recovery',
+    reward: 75,
+  },
+  {
+    id: 'squat',
+    emoji: '🦵',
+    name: 'Приседания',
+    description: '15 приседаний',
+    howTo: [
+      'Стой прямо, ноги на ширине плеч',
+      'Опускайся до параллели бёдер с полом',
+      'Спина ровная, колени не заходят за носки',
+      'Встань — это 1 повторение',
+    ],
+    healthBenefit: 'Укрепляет квадрицепсы, ягодицы и кор. Улучшает гормональный фон',
+    category: 'strength',
+    reward: 150,
+  },
+  {
+    id: 'pushup',
+    emoji: '💪',
+    name: 'Отжимания',
+    description: '10 отжиманий от пола',
+    howTo: [
+      'Упрись ладонями чуть шире плеч',
+      'Тело прямое как доска — не прогибай поясницу',
+      'Опускай грудь до касания пола',
+      'Выжми себя вверх — это 1 повторение',
+    ],
+    healthBenefit: 'Развивает грудь, трицепсы, плечи и укрепляет стабилизаторы корпуса',
+    category: 'strength',
+    reward: 200,
+  },
+  {
+    id: 'breathe',
+    emoji: '🌬️',
+    name: 'Дыхание',
+    description: 'Глубокое дыхание 1 минуту',
+    howTo: [
+      'Вдох через нос — 4 секунды',
+      'Задержи дыхание — 4 секунды',
+      'Выдох через рот — 6 секунд',
+      'Повтори 6–8 раз',
+    ],
+    healthBenefit: 'Снижает кортизол (стресс-гормон), нормализует давление и улучшает фокус',
+    category: 'recovery',
+    reward: 80,
+  },
+  {
+    id: 'walk',
+    emoji: '🚶',
+    name: 'Прогулка',
+    description: 'Пройди 1000 шагов на улице',
+    howTo: [
+      'Выйди на улицу или длинный коридор',
+      'Шагай активно — руки двигаются в такт',
+      'Дыши носом, держи голову поднятой',
+      'Поддерживай темп ~120 шагов в минуту',
+    ],
+    healthBenefit: 'Тысяча шагов = сожжённые калории, свежий воздух и выброс серотонина',
+    category: 'cardio',
+    reward: 300,
+  },
 ]
 
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first_click',     emoji: '👟', name: 'Первый шаг',      desc: 'Сделал первый клик' },
   { id: 'clicks_50',       emoji: '💪', name: '50 кликов',       desc: 'Накликал 50 раз' },
   { id: 'clicks_500',      emoji: '🔥', name: '500 кликов',      desc: 'Настоящий кликер' },
-  { id: 'first_trainer',   emoji: '🪢', name: 'Первый тренажёр', desc: 'Купил скакалку' },
-  { id: 'first_challenge', emoji: '✅', name: 'Первое задание',   desc: 'Выполнил задание' },
+  { id: 'first_trainer',   emoji: '🪢', name: 'Первый тренажёр', desc: 'Купил первый тренажёр' },
+  { id: 'first_challenge', emoji: '✅', name: 'Первое задание',   desc: 'Выполнил первое задание' },
   { id: 'all_challenges',  emoji: '🌟', name: 'Все задания',      desc: 'Все задания за день' },
-  { id: 'level_amateur',   emoji: '🥈', name: 'Любитель',        desc: 'Достиг уровня Любитель' },
+  { id: 'vip_unlocked',    emoji: '👑', name: 'VIP доступ',      desc: 'Открыл ВИП-тренировки' },
+  { id: 'level_amateur',   emoji: '🥈', name: 'Начинающий',      desc: 'Достиг уровня Начинающий' },
   { id: 'level_sportsman', emoji: '🥇', name: 'Спортсмен',       desc: 'Достиг уровня Спортсмен' },
   { id: 'streak_3',        emoji: '🔥', name: '3 дня подряд',    desc: 'Серия 3 дня' },
   { id: 'streak_7',        emoji: '🗓️', name: 'Неделя!',         desc: 'Серия 7 дней' },
@@ -127,11 +358,51 @@ export const TRAINERS: Omit<Trainer, 'count'>[] = [
 ]
 
 export const LEVELS = [
-  { min: 0,       label: 'Новичок',   emoji: '🧍', character: '🧍' },
-  { min: 1000,    label: 'Любитель',  emoji: '🚶', character: '🚶' },
-  { min: 10000,   label: 'Спортсмен', emoji: '🏃', character: '🏃' },
-  { min: 100000,  label: 'Атлет',     emoji: '🏋️', character: '🏋️' },
-  { min: 1000000, label: 'Чемпион',   emoji: '🥇', character: '🥇' },
+  {
+    min: 0,
+    label: 'Новичок',
+    emoji: '🌱',
+    character: '🌱',
+    color: '#34d399',
+    nextLevelHint: 'Выпей воду, пройди 100 шагов и покрути головой',
+    nextRequiredChallenges: ['water', 'steps100', 'headrotate'],
+  },
+  {
+    min: 1000,
+    label: 'Начинающий',
+    emoji: '🏃',
+    character: '🏃',
+    color: '#60a5fa',
+    nextLevelHint: 'Добавь растяжку, приседания и дыхание',
+    nextRequiredChallenges: ['stretch', 'squat', 'breathe'],
+  },
+  {
+    min: 10000,
+    label: 'Спортсмен',
+    emoji: '💪',
+    character: '💪',
+    color: '#a78bfa',
+    nextLevelHint: 'Выполни отжимания и прогулку',
+    nextRequiredChallenges: ['pushup', 'walk'],
+  },
+  {
+    min: 100000,
+    label: 'Атлет',
+    emoji: '🏋️',
+    character: '🏋️',
+    color: '#f59e0b',
+    nextLevelHint: 'Выполняй все задания каждый день',
+    nextRequiredChallenges: [],
+  },
+  {
+    min: 1000000,
+    label: 'Чемпион',
+    emoji: '🥇',
+    character: '🥇',
+    color: '#fbbf24',
+    nextLevelHint: 'Ты на вершине!',
+    nextRequiredChallenges: [],
+  },
 ]
 
 export function getLevel(totalPower: number) {
@@ -169,7 +440,7 @@ export function formatDuration(seconds: number): string {
   return `${m}м`
 }
 
-const SAVE_KEY = 'fitness_clicker_v4'
+const SAVE_KEY = 'fitness_clicker_v5'
 
 export function saveGame(state: GameState) {
   try {
@@ -190,6 +461,8 @@ export function saveGame(state: GameState) {
       trainerLastWorkout: state.trainerLastWorkout,
       selectedProgram: state.selectedProgram,
       programLastCompleted: state.programLastCompleted,
+      completedVipWorkouts: state.completedVipWorkouts,
+      dailyAllDoneDate: state.dailyAllDoneDate,
     }))
   } catch {}
 }

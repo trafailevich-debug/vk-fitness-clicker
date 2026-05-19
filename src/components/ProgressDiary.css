@@ -16,9 +16,9 @@
 
 /* ── Streak ── */
 .streak-card {
-  background: linear-gradient(160deg, rgba(255, 110, 30, 0.18) 0%, rgba(255, 60, 10, 0.08) 100%);
-  border-color: rgba(255, 130, 50, 0.28);
-  border-top-color: rgba(255, 200, 100, 0.38);
+  background: linear-gradient(160deg, rgba(251,191,36,0.14) 0%, rgba(245,158,11,0.06) 100%);
+  border-color: rgba(251,191,36,0.25);
+  border-top-color: rgba(253,230,138,0.35);
 }
 
 .streak-card-top {
@@ -41,13 +41,13 @@
 .streak-days {
   font-size: 22px;
   font-weight: 800;
-  color: #FFB340;
+  color: #FCD34D;
   line-height: 1;
 }
 
 .streak-label {
   font-size: 12px;
-  color: rgba(255, 200, 100, 0.7);
+  color: rgba(253,230,138,0.65);
   margin-top: 2px;
 }
 
@@ -114,7 +114,7 @@
 .level-pct {
   font-size: 15px;
   font-weight: 700;
-  color: #FF9F4A;
+  color: #93c5fd;
 }
 
 .diary-progress-bar {
@@ -127,10 +127,10 @@
 
 .diary-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FF4500, #FF6B35, #FF9F4A);
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
   border-radius: 4px;
   transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 8px rgba(255,100,30,0.5);
+  box-shadow: 0 0 8px rgba(96,165,250,0.45);
 }
 
 .level-milestones {
@@ -212,7 +212,7 @@
 
 .act-bar {
   height: 100%;
-  background: linear-gradient(90deg, #FF4500, #FF9F4A);
+  background: linear-gradient(90deg, #3b82f6, #34d399);
   border-radius: 4px;
   transition: width 0.5s ease;
 }
@@ -259,7 +259,7 @@
 .stat-val {
   font-size: 24px;
   font-weight: 800;
-  color: #FF9F4A;
+  color: #93c5fd;
   line-height: 1;
 }
 

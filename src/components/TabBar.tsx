@@ -7,10 +7,10 @@ interface Props {
 }
 
 const TABS: { id: Tab; emoji: string; label: string }[] = [
-  { id: 'train',      emoji: '🏋️', label: 'Тренировки' },
-  { id: 'challenges', emoji: '🎯', label: 'Челленджи'  },
-  { id: 'diary',      emoji: '📓', label: 'Дневник'    },
-  { id: 'rewards',    emoji: '🏆', label: 'Награды'    },
+  { id: 'train',       emoji: '🏋️', label: 'Тренировки' },
+  { id: 'challenges',  emoji: '🎯', label: 'Задания'    },
+  { id: 'leaderboard', emoji: '🏆', label: 'Рейтинг'    },
+  { id: 'rewards',     emoji: '⭐', label: 'Профиль'    },
 ]
 
 export function TabBar({ active, onChange }: Props) {

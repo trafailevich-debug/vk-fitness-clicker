@@ -9,10 +9,13 @@ import { RewardsPanel } from './components/RewardsPanel'
 import { TabBar } from './components/TabBar'
 import { OfflineEarnings } from './components/OfflineEarnings'
 import { AchievementToast } from './components/AchievementToast'
+import { Leaderboard } from './components/Leaderboard'
+import { VipWorkouts } from './components/VipWorkouts'
 import {
   GameState, Trainer, TRAINERS, LEVELS, DAILY_CHALLENGES, PROGRAMS,
   MAX_DAILY_CLICKS, MAX_OFFLINE_SECONDS, ENDURANCE_CLICKS_PER_LEVEL,
   getLevel, getTrainerCost, saveGame, loadGame, todayStr, todayMidnightMs,
+  formatNumber,
 } from './store/gameStore'
 import './App.css'
 
@@ -20,70 +23,40 @@ const TICK_MS = 200
 const COMBO_RESET_MS = 1500
 const FREEZE_COST = 200
 
-export type Tab = 'train' | 'challenges' | 'diary' | 'rewards'
+export type Tab = 'train' | 'challenges' | 'leaderboard' | 'rewards'
 
 const BG_PARTICLES = [
-  { id: 0, size: 3, left: 7,  dur: 9,  delay: 0,   color: '#FF5722' },
-  { id: 1, size: 5, left: 17, dur: 11, delay: 1.8, color: '#FF9800' },
-  { id: 2, size: 3, left: 27, dur: 8,  delay: 3.2, color: 'rgba(255,255,255,0.55)' },
-  { id: 3, size: 4, left: 36, dur: 10, delay: 0.6, color: '#FF5722' },
-  { id: 4, size: 6, left: 46, dur: 13, delay: 2.5, color: '#FF9800' },
-  { id: 5, size: 3, left: 57, dur: 9,  delay: 4.8, color: 'rgba(255,255,255,0.45)' },
-  { id: 6, size: 5, left: 66, dur: 11, delay: 1.4, color: '#FF5722' },
-  { id: 7, size: 4, left: 77, dur: 8,  delay: 3.9, color: '#FF9800' },
-  { id: 8, size: 3, left: 87, dur: 10, delay: 0.9, color: 'rgba(255,255,255,0.5)' },
-  { id: 9, size: 4, left: 94, dur: 12, delay: 5.5, color: '#FF5722' },
-]
-
-const BG_EQUIPMENT = [
-  { emoji: '🏋️', size: 72, left: 6,  top: 18, dur: 8,  delay: 0 },
-  { emoji: '💪',  size: 58, left: 80, top: 12, dur: 10, delay: 1.8 },
-  { emoji: '🎽',  size: 52, left: 52, top: 58, dur: 9,  delay: 3.5 },
-  { emoji: '⚡',  size: 48, left: 14, top: 62, dur: 11, delay: 2.2 },
-  { emoji: '🔥',  size: 44, left: 88, top: 52, dur: 7,  delay: 4.5 },
-  { emoji: '🥇',  size: 42, left: 40, top: 25, dur: 12, delay: 1 },
+  { id: 0, size: 2, left: 8,  dur: 11, delay: 0,   color: 'rgba(96,165,250,0.7)' },
+  { id: 1, size: 3, left: 19, dur: 14, delay: 2.1, color: 'rgba(167,139,250,0.6)' },
+  { id: 2, size: 2, left: 31, dur: 9,  delay: 4.0, color: 'rgba(255,255,255,0.5)' },
+  { id: 3, size: 3, left: 43, dur: 12, delay: 1.2, color: 'rgba(52,211,153,0.6)' },
+  { id: 4, size: 2, left: 55, dur: 15, delay: 3.5, color: 'rgba(96,165,250,0.55)' },
+  { id: 5, size: 3, left: 67, dur: 10, delay: 5.2, color: 'rgba(255,255,255,0.45)' },
+  { id: 6, size: 2, left: 79, dur: 13, delay: 1.8, color: 'rgba(167,139,250,0.65)' },
+  { id: 7, size: 3, left: 88, dur: 11, delay: 4.1, color: 'rgba(52,211,153,0.5)' },
 ]
 
 function AppBackground() {
   return (
     <div className="app-bg" aria-hidden="true">
-      {/* 3D floor */}
-      <div className="bg-floor-scene">
-        <div className="bg-floor" />
+      {/* Aurora cloud blobs */}
+      <div className="bg-blob bg-blob-1" />
+      <div className="bg-blob bg-blob-2" />
+      <div className="bg-blob bg-blob-3" />
+      <div className="bg-blob bg-blob-4" />
+      <div className="bg-blob bg-blob-5" />
+
+      {/* 3D perspective grid */}
+      <div className="bg-grid-scene">
+        <div className="bg-grid" />
       </div>
-      <div className="bg-floor-fade" />
+      <div className="bg-grid-fade" />
 
-      {/* Ceiling spotlights */}
-      <div className="bg-spot bg-spot-1" />
-      <div className="bg-spot bg-spot-2" />
-
-      {/* Ambient glows */}
-      <div className="app-bg-glow glow-1" />
-      <div className="app-bg-glow glow-2" />
-      <div className="app-bg-glow glow-3" />
-
-      {/* Floating gym equipment */}
-      {BG_EQUIPMENT.map((e, i) => (
-        <div
-          key={i}
-          className="bg-equipment"
-          style={{
-            fontSize: e.size,
-            left: `${e.left}%`,
-            top: `${e.top}%`,
-            animationDuration: `${e.dur}s`,
-            animationDelay: `${e.delay}s`,
-          }}
-        >
-          {e.emoji}
-        </div>
-      ))}
-
-      {/* Energy particles */}
+      {/* Light particles */}
       {BG_PARTICLES.map(p => (
         <div
           key={p.id}
-          className="app-bg-particle"
+          className="bg-particle"
           style={{
             width: p.size,
             height: p.size,
@@ -91,10 +64,60 @@ function AppBackground() {
             animationDuration: `${p.dur}s`,
             animationDelay: `${p.delay}s`,
             background: p.color,
-            boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+            boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
           }}
         />
       ))}
+    </div>
+  )
+}
+
+function StatusBanner({ totalPower, completedChallenges }: { totalPower: number; completedChallenges: string[] }) {
+  const level = getLevel(totalPower)
+  const currentIdx = LEVELS.findIndex(l => l.label === level.label)
+  const nextLevel = LEVELS[currentIdx + 1]
+
+  if (!nextLevel || nextLevel.nextRequiredChallenges.length === 0) {
+    return (
+      <div className="status-banner">
+        <div className="status-banner-top">
+          <div className="status-level-chip">
+            <span className="status-level-emoji">{level.emoji}</span>
+            <span className="status-level-text">{level.label}</span>
+          </div>
+          <span className="status-power">💪 {formatNumber(totalPower)}</span>
+        </div>
+        <div className="status-hint">
+          {nextLevel ? `До «${nextLevel.label}» — ${formatNumber(nextLevel.min - totalPower)} силы` : '🏆 Максимальный уровень!'}
+        </div>
+      </div>
+    )
+  }
+
+  const reqs = nextLevel.nextRequiredChallenges
+  const challenge = DAILY_CHALLENGES
+
+  return (
+    <div className="status-banner">
+      <div className="status-banner-top">
+        <div className="status-level-chip">
+          <span className="status-level-emoji">{level.emoji}</span>
+          <span className="status-level-text">{level.label}</span>
+        </div>
+        <span className="status-power">→ {nextLevel.emoji} {nextLevel.label}</span>
+      </div>
+      <div className="status-hint">Для следующего уровня выполни сегодня:</div>
+      <div className="status-req-chips">
+        {reqs.map(id => {
+          const ch = challenge.find(c => c.id === id)
+          const done = completedChallenges.includes(id)
+          return (
+            <span key={id} className={`status-req-chip ${done ? 'done' : 'todo'}`}>
+              {done ? '✓ ' : ''}{ch?.name ?? id}
+            </span>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -119,6 +142,7 @@ function buildInitialState(): GameState {
   const isNewDay = (saved?.lastDailyReset ?? '') !== today
   const dailyClicksLeft = isNewDay ? MAX_DAILY_CLICKS : (saved?.dailyClicksLeft ?? MAX_DAILY_CLICKS)
   const completedChallenges = isNewDay ? [] : (saved?.completedChallenges ?? [])
+  const completedVipWorkouts = isNewDay ? [] : ((saved as any)?.completedVipWorkouts ?? [])
 
   const lastLogin = saved?.lastLoginDate ?? ''
   const yesterday = new Date()
@@ -135,9 +159,8 @@ function buildInitialState(): GameState {
   } else if (lastLogin === '') {
     streak = 1
   } else {
-    // missed a day — use freeze if available
     if (streakFreezes > 0) {
-      // streak preserved by freeze, freeze consumed
+      // streak preserved
     } else {
       streak = 1
     }
@@ -164,6 +187,8 @@ function buildInitialState(): GameState {
     trainerLastWorkout: (saved as any)?.trainerLastWorkout ?? {},
     selectedProgram: (saved as any)?.selectedProgram ?? null,
     programLastCompleted: (saved as any)?.programLastCompleted ?? '',
+    completedVipWorkouts,
+    dailyAllDoneDate: (saved as any)?.dailyAllDoneDate ?? '',
   }
 }
 
@@ -180,7 +205,6 @@ export default function App() {
   const stateRef = useRef(state)
   stateRef.current = state
 
-  // Unlock achievement (deduped)
   const unlock = useCallback((id: string) => {
     setState(s => {
       if (s.achievements.includes(id)) return s
@@ -189,7 +213,6 @@ export default function App() {
     })
   }, [])
 
-  // Process achievement queue one-by-one
   useEffect(() => {
     if (!currentAchievement && achievementQueue.length > 0) {
       setCurrentAchievement(achievementQueue[0])
@@ -199,7 +222,6 @@ export default function App() {
     }
   }, [achievementQueue, currentAchievement])
 
-  // VK Bridge
   useEffect(() => {
     bridge.send('VKWebAppInit').catch(() => {})
     bridge.send('VKWebAppGetUserInfo')
@@ -207,12 +229,11 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  // Offline earnings on mount
   useEffect(() => {
     const saved = loadGame()
     if (!saved?.lastActiveTime || !stateRef.current.powerPerSecond) return
     const secondsAway = (Date.now() - saved.lastActiveTime) / 1000
-    if (secondsAway < 600) return // less than 10 min — skip
+    if (secondsAway < 600) return
     const clampedSeconds = Math.min(secondsAway, MAX_OFFLINE_SECONDS)
     const gain = Math.floor(clampedSeconds * stateRef.current.powerPerSecond)
     if (gain <= 0) return
@@ -222,7 +243,6 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Idle tick
   useEffect(() => {
     const interval = setInterval(() => {
       setState(s => {
@@ -234,25 +254,28 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
-  // Auto-save
   useEffect(() => {
     const interval = setInterval(() => saveGame(stateRef.current), 5000)
     return () => clearInterval(interval)
   }, [])
 
-  // Daily reset
   useEffect(() => {
     const interval = setInterval(() => {
       const today = todayStr()
       setState(s => {
         if (s.lastDailyReset === today) return s
-        return { ...s, dailyClicksLeft: MAX_DAILY_CLICKS, lastDailyReset: today, completedChallenges: [] }
+        return {
+          ...s,
+          dailyClicksLeft: MAX_DAILY_CLICKS,
+          lastDailyReset: today,
+          completedChallenges: [],
+          completedVipWorkouts: [],
+        }
       })
     }, 60_000)
     return () => clearInterval(interval)
   }, [])
 
-  // Achievement watchers
   const level = getLevel(state.totalPower)
   useEffect(() => {
     if (state.streak >= 7) unlock('streak_7')
@@ -260,7 +283,7 @@ export default function App() {
   }, [state.streak, unlock])
   useEffect(() => {
     if (level.label === 'Спортсмен') unlock('level_sportsman')
-    else if (level.label === 'Любитель') unlock('level_amateur')
+    else if (level.label === 'Начинающий') unlock('level_amateur')
   }, [level.label, unlock])
 
   const handleWorkoutComplete = useCallback((trainerId: string, reward: number) => {
@@ -294,6 +317,18 @@ export default function App() {
     })
   }, [])
 
+  const handleVipComplete = useCallback((id: string, reward: number) => {
+    setState(s => {
+      if (s.completedVipWorkouts.includes(id)) return s
+      return {
+        ...s,
+        power: s.power + reward,
+        totalPower: s.totalPower + reward,
+        completedVipWorkouts: [...s.completedVipWorkouts, id],
+      }
+    })
+  }, [])
+
   const handleClick = useCallback(() => {
     comboCountRef.current += 1
     const c = comboCountRef.current
@@ -313,15 +348,12 @@ export default function App() {
       }
     })
 
-    // Click-based achievements
-    const newClicks = comboCountRef.current
     const totalAfter = stateRef.current.totalClicks + 1
     if (totalAfter === 1) unlock('first_click')
     if (totalAfter === 50) unlock('clicks_50')
     if (totalAfter === 500) unlock('clicks_500')
     if (c >= 5 && c < 6) unlock('combo_x2')
     if (c >= 10 && c < 11) unlock('combo_x3')
-    void newClicks
 
     if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
     comboTimerRef.current = setTimeout(() => {
@@ -337,12 +369,17 @@ export default function App() {
       if (!ch) return s
       const newCompleted = [...s.completedChallenges, id]
       if (newCompleted.length === 1) setTimeout(() => unlock('first_challenge'), 0)
-      if (newCompleted.length === DAILY_CHALLENGES.length) setTimeout(() => unlock('all_challenges'), 100)
+      const allDone = newCompleted.length === DAILY_CHALLENGES.length
+      if (allDone) {
+        setTimeout(() => unlock('all_challenges'), 100)
+        setTimeout(() => unlock('vip_unlocked'), 200)
+      }
       return {
         ...s,
         power: s.power + ch.reward,
         totalPower: s.totalPower + ch.reward,
         completedChallenges: newCompleted,
+        dailyAllDoneDate: allDone ? todayStr() : s.dailyAllDoneDate,
       }
     })
   }, [unlock])
@@ -379,7 +416,6 @@ export default function App() {
   const comboMultiplier = comboCount >= 10 ? 3 : comboCount >= 5 ? 2 : 1
   const effectiveMaxClicks = MAX_DAILY_CLICKS + state.characterStats.endurance * ENDURANCE_CLICKS_PER_LEVEL
 
-  // Program completion check
   const selectedProg = PROGRAMS.find(p => p.id === state.selectedProgram)
   const todayMidnight = todayMidnightMs()
   const programDone = selectedProg
@@ -388,6 +424,8 @@ export default function App() {
         .every(id => (state.trainerLastWorkout[id] ?? 0) > todayMidnight)
     : false
   const programAlreadyClaimed = state.programLastCompleted === todayStr()
+
+  const vipUnlocked = state.dailyAllDoneDate === todayStr()
 
   return (
     <div className="app">
@@ -403,7 +441,7 @@ export default function App() {
       <AchievementToast achievementId={currentAchievement} />
 
       <div className="app-header">
-        <span className="app-title">🏋️ Фитнес-клуб</span>
+        <span className="app-title">✦ FitLife</span>
         <div className="app-header-right">
           {state.streak > 1 && <span className="streak-badge">🔥 {state.streak}</span>}
           <span className="app-level">{level.emoji} {level.label}</span>
@@ -426,6 +464,10 @@ export default function App() {
 
         {tab === 'train' && (
           <>
+            <StatusBanner
+              totalPower={state.totalPower}
+              completedChallenges={state.completedChallenges}
+            />
             <ClickButton
               level={level}
               comboMultiplier={comboMultiplier}
@@ -448,6 +490,11 @@ export default function App() {
               onSelectProgram={handleSelectProgram}
               onProgramComplete={handleProgramComplete}
             />
+            <VipWorkouts
+              vipUnlocked={vipUnlocked}
+              completedVipWorkouts={state.completedVipWorkouts}
+              onComplete={handleVipComplete}
+            />
           </>
         )}
 
@@ -455,22 +502,30 @@ export default function App() {
           <DailyChallenges
             completedChallenges={state.completedChallenges}
             onComplete={handleCompleteChallenge}
+            vipJustUnlocked={vipUnlocked && state.completedChallenges.length === DAILY_CHALLENGES.length}
           />
         )}
 
-        {tab === 'diary' && (
-          <ProgressDiary
-            state={state}
-            onBuyFreeze={handleBuyFreeze}
+        {tab === 'leaderboard' && (
+          <Leaderboard
+            totalPower={state.totalPower}
+            userName={state.userName}
+            streak={state.streak}
           />
         )}
 
         {tab === 'rewards' && (
-          <RewardsPanel
-            unlockedIds={state.achievements}
-            totalClicks={state.totalClicks}
-            streak={state.streak}
-          />
+          <>
+            <RewardsPanel
+              unlockedIds={state.achievements}
+              totalClicks={state.totalClicks}
+              streak={state.streak}
+            />
+            <ProgressDiary
+              state={state}
+              onBuyFreeze={handleBuyFreeze}
+            />
+          </>
         )}
       </div>
 
