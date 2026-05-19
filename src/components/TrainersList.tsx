@@ -127,13 +127,27 @@ function TrainerRow({ trainer, workedOutToday, isActive, onToggle, onComplete }:
   onToggle: () => void; onComplete: (reward: number) => void
 }) {
   const [result, setResult] = useState<'ok' | 'fail' | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
   const w = TRAINER_WORKOUTS[trainer.id]
 
   const handleDone = useCallback((ok: boolean) => {
     setResult(ok ? 'ok' : 'fail')
-    if (ok) onComplete(w.reward)
-    setTimeout(() => setResult(null), 1800)
+    if (ok) {
+      onComplete(w.reward)
+      setTimeout(() => setResult(null), 1800)
+    }
+    // при провале — НЕ сбрасываем автоматически, ждём выбора пользователя
   }, [onComplete, w])
+
+  const handleRetry = useCallback(() => {
+    setResult(null)
+    setRetryKey(k => k + 1)
+  }, [])
+
+  const handleCancel = useCallback(() => {
+    setResult(null)
+    onToggle() // закрывает мини-игру
+  }, [onToggle])
 
   const desc = workedOutToday ? '✅ Выполнено' :
     w.type === 'tap' ? `👊 ${w.target} раз за ${w.timeLimit}с` : `✊ Держи ${w.duration}с`
@@ -147,17 +161,28 @@ function TrainerRow({ trainer, workedOutToday, isActive, onToggle, onComplete }:
           <span className="t-desc">{desc}</span>
         </div>
         <div className="t-action">
-          {workedOutToday    ? <span className="t-badge done">✓</span>
-          : result === 'ok'  ? <span className="t-badge ok">+{w.reward}💪</span>
-          : result === 'fail'? <span className="t-badge fail">😅</span>
-          : isActive         ? <span className="t-badge running">…</span>
-          :                    <button className="t-btn" onClick={onToggle}>Начать</button>}
+          {workedOutToday   ? <span className="t-badge done">✓</span>
+          : result === 'ok' ? <span className="t-badge ok">+{w.reward}💪</span>
+          : isActive        ? <span className="t-badge running">…</span>
+          :                   <button className="t-btn" onClick={onToggle}>Начать</button>}
         </div>
       </div>
+
+      {/* Провал — кнопки выбора */}
+      {result === 'fail' && (
+        <div className="t-fail-panel">
+          <span className="t-fail-msg">😅 Не получилось — попробуй ещё раз!</span>
+          <div className="t-fail-btns">
+            <button className="t-retry-btn" onClick={handleRetry}>🔄 Повторить</button>
+            <button className="t-cancel-btn" onClick={handleCancel}>✕ Отменить</button>
+          </div>
+        </div>
+      )}
+
       {isActive && !result && (
         w.type === 'tap'
-          ? <TapWorkout target={w.target!} timeLimit={w.timeLimit!} reward={w.reward} onDone={handleDone} />
-          : <HoldWorkout duration={w.duration!} reward={w.reward} onDone={handleDone} />
+          ? <TapWorkout key={retryKey} target={w.target!} timeLimit={w.timeLimit!} reward={w.reward} onDone={handleDone} />
+          : <HoldWorkout key={retryKey} duration={w.duration!} reward={w.reward} onDone={handleDone} />
       )}
     </div>
   )
