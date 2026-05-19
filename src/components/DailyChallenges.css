@@ -1,8 +1,8 @@
 .challenges {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 20px;
   padding: 18px;
 }
@@ -44,15 +44,23 @@
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 14px;
+  animation: banner-glow 2s ease-in-out infinite;
 }
 
+@keyframes banner-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
+  50%       { box-shadow: 0 0 14px 0 rgba(48, 209, 88, 0.2); }
+}
+
+/* ── Challenge rows ── */
 .challenge-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  transition: opacity 0.3s;
+  transition: opacity 0.3s, background 0.3s;
+  border-radius: 12px;
 }
 
 .challenge-row:last-child {
@@ -61,7 +69,39 @@
 }
 
 .challenge-row.done {
-  opacity: 0.4;
+  opacity: 0.38;
+}
+
+/* Active exercise — highlighted */
+.challenge-row.active {
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: 14px;
+  padding: 12px 10px;
+  margin: 0 -10px;
+  width: calc(100% + 20px);
+  animation: active-pulse 2s ease-in-out infinite;
+}
+
+@keyframes active-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 53, 0); }
+  50%       { box-shadow: 0 0 18px 0 rgba(255, 107, 53, 0.2); }
+}
+
+/* Ready to complete — green highlight */
+.challenge-row.ready {
+  background: rgba(48, 209, 88, 0.08);
+  border: 1px solid rgba(48, 209, 88, 0.22);
+  border-radius: 14px;
+  padding: 12px 10px;
+  margin: 0 -10px;
+  width: calc(100% + 20px);
+  animation: ready-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ready-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
+  50%       { box-shadow: 0 0 16px 0 rgba(48, 209, 88, 0.25); }
 }
 
 .challenge-emoji {
@@ -83,8 +123,33 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.45);
   margin-top: 2px;
+  transition: color 0.3s;
 }
 
+.challenge-row.active .challenge-desc {
+  color: rgba(255, 180, 100, 0.85);
+  font-weight: 500;
+}
+
+/* Timer progress bar */
+.timer-bar-wrap {
+  margin-top: 7px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #FF4500, #FF9800);
+  border-radius: 2px;
+  transition: width 0.95s linear;
+  box-shadow: 0 0 6px rgba(255, 100, 30, 0.6);
+}
+
+/* ── Right side ── */
 .challenge-right {
   display: flex;
   flex-direction: column;
@@ -99,30 +164,73 @@
   color: #FF9F4A;
 }
 
+/* Countdown timer display */
+.challenge-timer {
+  font-size: 22px;
+  font-weight: 900;
+  color: #FF6B35;
+  min-width: 52px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 12px rgba(255, 107, 53, 0.6);
+  animation: timer-tick 1s ease-in-out infinite;
+}
+
+@keyframes timer-tick {
+  0%, 100% { transform: scale(1);    }
+  50%       { transform: scale(1.06); }
+}
+
+.challenge-done-badge {
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 74px;
+  text-align: center;
+}
+
+/* ── Buttons ── */
 .challenge-btn {
   padding: 7px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(48, 209, 88, 0.45);
-  background: rgba(48, 209, 88, 0.18);
-  color: #30D158;
+  border: none;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.1s, background 0.15s;
+  transition: transform 0.12s, box-shadow 0.12s;
   -webkit-tap-highlight-color: transparent;
   min-width: 74px;
   text-align: center;
   white-space: nowrap;
 }
 
-.challenge-btn.done {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.35);
-  cursor: default;
+.challenge-btn.start {
+  background: linear-gradient(135deg, #FF5722, #FF9800);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(255, 87, 34, 0.35);
 }
 
-.challenge-btn:not(.done):active {
-  transform: scale(0.94);
-  background: rgba(48, 209, 88, 0.32);
+.challenge-btn.start:active {
+  transform: scale(0.93);
+  box-shadow: 0 2px 8px rgba(255, 87, 34, 0.2);
+}
+
+.challenge-btn.finish {
+  background: linear-gradient(135deg, #2ecc71, #30D158);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(48, 209, 88, 0.4);
+  animation: finish-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes finish-bounce {
+  0%   { transform: scale(0.8); }
+  100% { transform: scale(1);   }
+}
+
+.challenge-btn.finish:active {
+  transform: scale(0.93);
 }

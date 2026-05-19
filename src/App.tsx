@@ -20,6 +20,45 @@ const FREEZE_COST = 200
 
 export type Tab = 'train' | 'challenges' | 'upgrades'
 
+const BG_PARTICLES = [
+  { id: 0, size: 3, left: 7,  dur: 9,  delay: 0,   color: '#FF5722' },
+  { id: 1, size: 5, left: 17, dur: 11, delay: 1.8, color: '#FF9800' },
+  { id: 2, size: 3, left: 27, dur: 8,  delay: 3.2, color: 'rgba(255,255,255,0.55)' },
+  { id: 3, size: 4, left: 36, dur: 10, delay: 0.6, color: '#FF5722' },
+  { id: 4, size: 6, left: 46, dur: 13, delay: 2.5, color: '#FF9800' },
+  { id: 5, size: 3, left: 57, dur: 9,  delay: 4.8, color: 'rgba(255,255,255,0.45)' },
+  { id: 6, size: 5, left: 66, dur: 11, delay: 1.4, color: '#FF5722' },
+  { id: 7, size: 4, left: 77, dur: 8,  delay: 3.9, color: '#FF9800' },
+  { id: 8, size: 3, left: 87, dur: 10, delay: 0.9, color: 'rgba(255,255,255,0.5)' },
+  { id: 9, size: 4, left: 94, dur: 12, delay: 5.5, color: '#FF5722' },
+]
+
+function AppBackground() {
+  return (
+    <div className="app-bg" aria-hidden="true">
+      <div className="app-bg-glow glow-1" />
+      <div className="app-bg-glow glow-2" />
+      <div className="app-bg-glow glow-3" />
+      <div className="app-bg-grid" />
+      {BG_PARTICLES.map(p => (
+        <div
+          key={p.id}
+          className="app-bg-particle"
+          style={{
+            width: p.size,
+            height: p.size,
+            left: `${p.left}%`,
+            animationDuration: `${p.dur}s`,
+            animationDelay: `${p.delay}s`,
+            background: p.color,
+            boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function buildInitialState(): GameState {
   const saved = loadGame()
   const today = todayStr()
@@ -265,6 +304,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <AppBackground />
       {offlineGain && (
         <OfflineEarnings
           gain={offlineGain.gain}
